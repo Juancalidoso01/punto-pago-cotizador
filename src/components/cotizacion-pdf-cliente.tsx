@@ -6,6 +6,7 @@ import {
 import {
   DEFAULT_COMISION_FIJA_USD,
   DEFAULT_COMISION_PORCENTAJE,
+  METODOS_PAGO_INTEGRACION,
   type CotizacionForm,
 } from "@/lib/cotizacion-types";
 import {
@@ -411,6 +412,12 @@ export function CotizacionPdfClienteDocument({
   cashOutCargoMensualEstimado,
   volumenCashOutUsd,
 }: CotizacionPdfClienteDocumentProps) {
+  const etiquetaAcuerdoPagoSetup =
+    form.metodoPagoIntegracion.trim() === ""
+      ? null
+      : (METODOS_PAGO_INTEGRACION.find((m) => m.id === form.metodoPagoIntegracion)
+          ?.label ?? null);
+
   return (
     <article
       id="cotizacion-cliente-document"
@@ -507,7 +514,10 @@ export function CotizacionPdfClienteDocument({
           resultadoIntegracion &&
           resultadoComision && (
             <div className="mt-5 space-y-4">
-              <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100">
+              <section
+                data-pdf-bloque-setup
+                className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100"
+              >
                 <div className="border-b border-slate-100 p-4 sm:p-5">
                   <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                     Set up e integración
@@ -519,6 +529,19 @@ export function CotizacionPdfClienteDocument({
                     Incluye el costo de integración según la modalidad y opciones
                     indicadas en la cotización (referencial).
                   </p>
+                  <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/90 p-3 sm:p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Acuerdo de pago del set up (referencial)
+                    </p>
+                    <p className="mt-2 text-sm font-medium leading-relaxed text-slate-900">
+                      {etiquetaAcuerdoPagoSetup ?? (
+                        <span className="font-normal text-slate-500">
+                          Indicar en el cotizador la forma de pago del set up (sección
+                          integración).
+                        </span>
+                      )}
+                    </p>
+                  </div>
                 </div>
                 <div
                   id="pdf-bloque-comision"
