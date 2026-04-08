@@ -1,7 +1,13 @@
+import type { TipoServicioPuntoPago } from "@/lib/tipo-servicio-punto-pago";
+
 export type CotizacionForm = {
   empresa: string;
   email: string;
   contactoNombre: string;
+  /** Línea de negocio Punto Pago (define qué secciones y montos aplican) */
+  tipoServicioPuntoPago: TipoServicioPuntoPago;
+  /** Volumen mensual estimado de cash out / desembolsos (USD, texto) */
+  volumenCashOutMensualUsd: string;
   /** Monto total mensual de ventas en USD (texto libre del input) */
   ventasMensualesTotalUsd: string;
   /** Cantidad total de ventas u operaciones al mes */
@@ -43,6 +49,8 @@ export function createEmptyForm(): CotizacionForm {
     empresa: "",
     email: "",
     contactoNombre: "",
+    tipoServicioPuntoPago: "",
+    volumenCashOutMensualUsd: "",
     ventasMensualesTotalUsd: "",
     cantidadVentasMensuales: "",
     canal: "",

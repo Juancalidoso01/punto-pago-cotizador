@@ -1,13 +1,11 @@
 import type { CotizacionForm } from "@/lib/cotizacion-types";
 import { parseEnteroPositivo, parseMontoUsd, type ResultadoComision } from "@/lib/comision";
 import type { ResultadoPrecioIntegracion } from "@/lib/integracion";
-
-export function esCotizacionCompleta(
+function esCotizacionCompletaKioscos(
   form: CotizacionForm,
   resultadoIntegracion: ResultadoPrecioIntegracion | null,
   resultadoComision: ResultadoComision | null,
 ): boolean {
-  if (!form.empresa.trim() || !form.email.trim().includes("@")) return false;
   if (!form.industriaId.trim()) return false;
   if (!form.tecnologiaStack.trim()) return false;
   if (
@@ -29,4 +27,31 @@ export function esCotizacionCompleta(
   }
   if (!resultadoIntegracion || !resultadoComision) return false;
   return true;
+}
+
+export function esCotizacionCompleta(
+  form: CotizacionForm,
+  resultadoIntegracion: ResultadoPrecioIntegracion | null,
+  resultadoComision: ResultadoComision | null,
+): boolean {
+  if (!form.empresa.trim() || !form.email.trim().includes("@")) return false;
+  if (!form.tipoServicioPuntoPago) return false;
+
+  switch (form.tipoServicioPuntoPago) {
+    case "kioscos":
+      return esCotizacionCompletaKioscos(
+        form,
+        resultadoIntegracion,
+        resultadoComision,
+      );
+    case "hub_pagos":
+    case "agentes":
+      return true;
+    case "cash_out": {
+      const v = parseMontoUsd(form.volumenCashOutMensualUsd);
+      return v !== null && v > 0;
+    }
+    default:
+      return false;
+  }
 }

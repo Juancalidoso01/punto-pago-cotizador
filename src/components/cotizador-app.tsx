@@ -29,6 +29,11 @@ import { buildCotizacionPayload } from "@/lib/cotizacion-payload";
 import { esCotizacionCompleta } from "@/lib/cotizacion-validacion";
 import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
 import { exportarCotizacionPdf } from "@/lib/exportar-pdf-cotizacion";
+import {
+  CASH_OUT_CARGO_CLIENTE_PCT,
+  SETUP_FEE_HUB_REF_USD,
+  TIPOS_SERVICIO_PUNTO_PAGO,
+} from "@/lib/tipo-servicio-punto-pago";
 
 /** Canales habituales en Panamá para el modelo de cobro del comercio */
 const MODELOS_PAGO_PANAMA = [
@@ -104,7 +109,7 @@ export function CotizadorApp() {
   }
 
   async function registrarEnSheet() {
-    if (!resultadoIntegracion || !resultadoComision) return;
+    if (!cotizacionCompleta) return;
     setRegistrando(true);
     setSheetNotice("idle");
     setSheetError(null);
@@ -113,8 +118,10 @@ export function CotizadorApp() {
         form,
         ref,
         formatFechaHoy(),
-        resultadoIntegracion,
-        resultadoComision,
+        form.tipoServicioPuntoPago === "kioscos"
+          ? resultadoIntegracion
+          : null,
+        form.tipoServicioPuntoPago === "kioscos" ? resultadoComision : null,
       );
       const res = await fetch("/api/cotizacion/registrar", {
         method: "POST",
@@ -175,7 +182,7 @@ export function CotizadorApp() {
 
   const resultadoIntegracion = useMemo(
     () =>
-      form.industriaId
+      form.tipoServicioPuntoPago === "kioscos" && form.industriaId
         ? calcularPrecioIntegracion({
             industriaId: form.industriaId,
             incluyeRecaudoKioscos: form.incluyeRecaudoKioscos,
@@ -184,6 +191,7 @@ export function CotizadorApp() {
           })
         : null,
     [
+      form.tipoServicioPuntoPago,
       form.industriaId,
       form.incluyeRecaudoKioscos,
       form.reporteFtpEmailSinBd,
@@ -192,6 +200,7 @@ export function CotizadorApp() {
   );
 
   const resultadoComision = useMemo(() => {
+    if (form.tipoServicioPuntoPago !== "kioscos") return null;
     const ventas = parseMontoUsd(form.ventasMensualesTotalUsd);
     const cantidad = parseEnteroPositivo(form.cantidadVentasMensuales);
     const pct = parseMontoUsd(DEFAULT_COMISION_PORCENTAJE);
@@ -213,13 +222,21 @@ export function CotizadorApp() {
       comisionPct: pct,
       comisionFijaUsd: fijo,
     });
-  }, [form.ventasMensualesTotalUsd, form.cantidadVentasMensuales]);
+  }, [
+    form.tipoServicioPuntoPago,
+    form.ventasMensualesTotalUsd,
+    form.cantidadVentasMensuales,
+  ]);
+
+  const cashOutCargoMensualEstimado = useMemo(() => {
+    if (form.tipoServicioPuntoPago !== "cash_out") return null;
+    const v = parseMontoUsd(form.volumenCashOutMensualUsd);
+    if (v === null || v <= 0) return null;
+    return v * (CASH_OUT_CARGO_CLIENTE_PCT / 100);
+  }, [form.tipoServicioPuntoPago, form.volumenCashOutMensualUsd]);
 
   const cotizacionCompleta = useMemo(
-    () =>
-      resultadoIntegracion && resultadoComision
-        ? esCotizacionCompleta(form, resultadoIntegracion, resultadoComision)
-        : false,
+    () => esCotizacionCompleta(form, resultadoIntegracion, resultadoComision),
     [form, resultadoIntegracion, resultadoComision],
   );
 
@@ -314,8 +331,8 @@ export function CotizadorApp() {
             )}
             {!cotizacionCompleta && validoMinimo && (
               <p className="mt-3 text-sm text-amber-200">
-                Completa industria, modalidad técnica, transaccionalidad e integración
-                para habilitar PDF y registro en Sheets.
+                Selecciona tipo de servicio y completa los campos requeridos (según el
+                tipo) para habilitar PDF y Sheets.
               </p>
             )}
           </div>
@@ -338,42 +355,52 @@ export function CotizadorApp() {
           className="no-print space-y-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
           aria-label="Datos de la cotización"
         >
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              1. Industria del prospecto
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Sectores frecuentes en Panamá con volumen masivo de clientes (banca,
-              telecomunicaciones, procesadores de pagos, remesas, transporte,
-              aerolíneas, retail, etc.). El set up fee se define más abajo según
-              modalidad técnica.
-            </p>
-            <label className="mt-4 block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
-                ¿A qué industria corresponde el cliente?
-              </span>
-              <select
-                className={`${inputClass} bg-white`}
-                value={form.industriaId}
-                onChange={(e) => setField("industriaId", e.target.value)}
-              >
-                <option value="">Seleccionar industria…</option>
-                {industriasEnGrupos().map(({ grupo, items }) => (
-                  <optgroup key={grupo} label={grupo}>
-                    {items.map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
-          </div>
+          {form.tipoServicioPuntoPago === "kioscos" && (
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                1. Industria del prospecto
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Sectores frecuentes en Panamá con volumen masivo de clientes (banca,
+                telecomunicaciones, procesadores de pagos, remesas, transporte,
+                aerolíneas, retail, etc.). El set up fee se define más abajo según
+                modalidad técnica.
+              </p>
+              <label className="mt-4 block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  ¿A qué industria corresponde el cliente?
+                </span>
+                <select
+                  className={`${inputClass} bg-white`}
+                  value={form.industriaId}
+                  onChange={(e) => setField("industriaId", e.target.value)}
+                >
+                  <option value="">Seleccionar industria…</option>
+                  {industriasEnGrupos().map(({ grupo, items }) => (
+                    <optgroup key={grupo} label={grupo}>
+                      {items.map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
 
-          <div className="border-t border-slate-100 pt-6">
+          <div
+            className={
+              form.tipoServicioPuntoPago === "kioscos"
+                ? "border-t border-slate-100 pt-6"
+                : ""
+            }
+          >
             <h2 className="text-lg font-semibold text-slate-900">
-              2. Datos del prospecto
+              {form.tipoServicioPuntoPago === "kioscos"
+                ? "2. Datos del prospecto"
+                : "1. Datos del prospecto"}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               Información de contacto del cliente.
@@ -422,10 +449,122 @@ export function CotizadorApp() {
           </div>
 
           <div className="border-t border-slate-100 pt-6">
+            <h2 className="text-lg font-semibold text-slate-900">
+              {form.tipoServicioPuntoPago === "kioscos"
+                ? "3. Tipo de servicio o programa Punto Pago"
+                : "2. Tipo de servicio o programa Punto Pago"}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Define qué producto se cotiza: botón en kioscos (flujo completo) u otras
+              líneas con montos y reglas distintas.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {TIPOS_SERVICIO_PUNTO_PAGO.map((t) => (
+                <label
+                  key={t.id}
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+                    form.tipoServicioPuntoPago === t.id
+                      ? "border-brand bg-brand/5 ring-1 ring-brand/25"
+                      : "border-slate-200 bg-white hover:bg-slate-50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="tipoServicioPuntoPago"
+                    className="mt-1 h-4 w-4 border-slate-300 text-brand focus:ring-brand"
+                    checked={form.tipoServicioPuntoPago === t.id}
+                    onChange={() => setField("tipoServicioPuntoPago", t.id)}
+                  />
+                  <span>
+                    <span className="font-medium text-slate-900">{t.label}</span>
+                    <span className="mt-1 block text-sm text-slate-600">
+                      {t.descripcion}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {form.tipoServicioPuntoPago === "hub_pagos" && (
+            <div className="border-t border-slate-100 pt-6">
+              <h3 className="text-base font-semibold text-slate-900">
+                Hub de pagos — referencia
+              </h3>
+              <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-700">
+                <p>
+                  <span className="font-semibold text-slate-900">
+                    Set up fee referencial:{" "}
+                  </span>
+                  {formatUsd(SETUP_FEE_HUB_REF_USD)} (USD).
+                </p>
+                <p>
+                  Las <strong>comisiones que Punto Pago paga al cliente</strong>{" "}
+                  dependen del volumen y del acuerdo por cada pago procesado con este
+                  servicio. Es una estimación orientativa; más adelante habrá un{" "}
+                  <strong>cotizador en línea</strong> para afinar el monto.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {form.tipoServicioPuntoPago === "cash_out" && (
+            <div className="border-t border-slate-100 pt-6">
+              <h3 className="text-base font-semibold text-slate-900">
+                Cash out / desembolsos
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Cargo referencial al comercio:{" "}
+                <strong>{CASH_OUT_CARGO_CLIENTE_PCT}%</strong> sobre el volumen
+                mensual indicado. Punto Pago cobra por cada desembolso según acuerdo.
+              </p>
+              <div className="mt-4 space-y-4">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">
+                    Volumen mensual estimado de desembolsos (USD)
+                  </span>
+                  <input
+                    className={inputClass}
+                    inputMode="decimal"
+                    value={form.volumenCashOutMensualUsd}
+                    onChange={(e) =>
+                      setField("volumenCashOutMensualUsd", e.target.value)
+                    }
+                    placeholder="Ej. 80,000"
+                  />
+                </label>
+                {cashOutCargoMensualEstimado !== null && (
+                  <p className="rounded-xl border border-brand/25 bg-brand/5 p-3 text-sm">
+                    <span className="font-medium text-slate-900">
+                      Cargo mensual estimado al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}
+                      %):{" "}
+                    </span>
+                    {formatUsd(cashOutCargoMensualEstimado)}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {form.tipoServicioPuntoPago === "agentes" && (
+            <div className="border-t border-slate-100 pt-6">
+              <h3 className="text-base font-semibold text-slate-900">Agentes</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Mismo esquema referencial que Hub de pagos (set up{" "}
+                {formatUsd(SETUP_FEE_HUB_REF_USD)}). El cotizador detallado para el
+                cliente queda <strong>pendiente</strong>; pronto incorporaremos los
+                datos para cotizar en línea.
+              </p>
+            </div>
+          )}
+
+          {form.tipoServicioPuntoPago === "kioscos" && (
+            <>
+          <div className="border-t border-slate-100 pt-6">
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
                 <h3 className="text-base font-semibold text-slate-900">
-                  3. Transaccionalidad (USD)
+                  4. Transaccionalidad (USD)
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
                   Monto y volumen de ventas al mes; canales típicos en Panamá. Los
@@ -516,13 +655,13 @@ export function CotizadorApp() {
 
           <div className="border-t border-slate-100 pt-6">
             <h3 className="text-base font-semibold text-slate-900">
-              4. Comisión recomendada (referencial)
+              5. Comisión recomendada (referencial)
             </h3>
             <p className="mt-1 text-sm text-slate-500">
               Se comparan automáticamente las tarifas de referencia:{" "}
               <strong>{DEFAULT_COMISION_PORCENTAJE}%</strong> sobre cada venta y{" "}
               <strong>{DEFAULT_COMISION_FIJA_USD} USD</strong> por transacción, usando
-              el ticket y volumen de la sección 3. Se muestra solo el modelo que
+              el ticket y volumen de la sección 4. Se muestra solo el modelo que
               conviene según esos datos. Punto Pago factura al comercio el total del
               período según el modelo acordado.
             </p>
@@ -531,7 +670,7 @@ export function CotizadorApp() {
               {!resultadoComision ? (
                 <p className="text-sm text-slate-600">
                   Completa el monto total mensual de ventas y la cantidad de ventas
-                  al mes (sección 3) para obtener la comisión recomendada.
+                  al mes (sección 4) para obtener la comisión recomendada.
                 </p>
               ) : (
                 <div className="space-y-3 text-sm">
@@ -578,7 +717,7 @@ export function CotizadorApp() {
 
           <div className="border-t border-slate-100 pt-6">
             <h3 className="text-base font-semibold text-slate-900">
-              5. Integración e implementación (USD)
+              6. Integración e implementación (USD)
             </h3>
             <p className="mt-1 text-sm text-slate-500">
               El <strong>set up fee</strong> depende de la <strong>modalidad
@@ -765,6 +904,8 @@ export function CotizadorApp() {
               )}
             </div>
           </div>
+            </>
+          )}
 
           <div
             className="no-print rounded-2xl border-2 border-brand/50 bg-gradient-to-br from-brand/[0.07] to-white p-6 shadow-sm"
@@ -774,7 +915,7 @@ export function CotizadorApp() {
               PDF para el cliente
             </h3>
             <p className="mt-1 text-sm text-slate-600">
-              Genera el resumen en PDF (set up y comisión mensual estimada) para
+              Genera el resumen en PDF según el tipo de servicio seleccionado para
               que el vendedor lo envíe al correo del cliente.
             </p>
             <button
@@ -787,7 +928,7 @@ export function CotizadorApp() {
             </button>
             {!cotizacionCompleta && (
               <p className="mt-3 text-sm font-medium text-amber-800">
-                Completa industria, modalidad, transaccionalidad e integración para
+                Selecciona tipo de servicio y completa los campos requeridos para
                 habilitar el PDF.
               </p>
             )}
@@ -837,68 +978,138 @@ export function CotizadorApp() {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-1">
             <p className="text-sm text-slate-600">
               <span className="font-medium text-slate-900">Cliente:</span>{" "}
               {form.empresa.trim() || "—"}
             </p>
+            <p className="text-sm text-slate-600">
+              <span className="font-medium text-slate-900">Servicio:</span>{" "}
+              {TIPOS_SERVICIO_PUNTO_PAGO.find((t) => t.id === form.tipoServicioPuntoPago)
+                ?.label ?? "—"}
+            </p>
           </div>
 
-          {resultadoIntegracion && resultadoComision && (
+          {form.tipoServicioPuntoPago === "kioscos" &&
+            resultadoIntegracion &&
+            resultadoComision && (
+              <>
+                <section className="mt-8">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Set up e integración (referencial)
+                  </h3>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                    {formatUsd(resultadoIntegracion.totalUsd)}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Incluye el costo de integración según la modalidad y opciones
+                    indicadas en la cotización (referencial).
+                  </p>
+                </section>
+
+                <section className="mt-8">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Comisión de servicio (mensual estimada)
+                  </h3>
+                  <p className="mt-2 text-2xl font-bold text-brand">
+                    {formatUsd(comisionMensualRecomendada(resultadoComision))}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    Modelo de referencia:{" "}
+                    <span className="font-medium">
+                      {tituloModeloRecomendado(resultadoComision.recomendacion)}
+                    </span>
+                    . Punto Pago factura al comercio el total del período según lo
+                    acordado.
+                  </p>
+                </section>
+
+                <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-800">
+                  <p className="font-semibold text-slate-900">Ejemplo</p>
+                  <p className="mt-2">
+                    Si tus ventas mensuales fueron de{" "}
+                    <span className="font-medium">
+                      {ventasMensualesParseado !== null
+                        ? formatUsd(ventasMensualesParseado)
+                        : "—"}
+                    </span>
+                    , la comisión mensual estimada de Punto Pago sería de{" "}
+                    <span className="font-medium">
+                      {formatUsd(comisionMensualRecomendada(resultadoComision))}
+                    </span>
+                    , con base en el volumen y el modelo visto en esta cotización.
+                  </p>
+                </section>
+              </>
+            )}
+
+          {form.tipoServicioPuntoPago === "hub_pagos" && (
             <>
               <section className="mt-8">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Set up e integración (referencial)
+                  Set up fee (referencial)
                 </h3>
                 <p className="mt-2 text-2xl font-bold text-slate-900">
-                  {formatUsd(resultadoIntegracion.totalUsd)}
-                </p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Incluye el costo de integración según la modalidad y opciones
-                  indicadas en la cotización (referencial).
+                  {formatUsd(SETUP_FEE_HUB_REF_USD)}
                 </p>
               </section>
-
               <section className="mt-8">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Comisión de servicio (mensual estimada)
+                  Comisiones que Punto Pago paga al cliente
                 </h3>
-                <p className="mt-2 text-2xl font-bold text-brand">
-                  {formatUsd(comisionMensualRecomendada(resultadoComision))}
-                </p>
-                <p className="mt-2 text-sm text-slate-700">
-                  Modelo de referencia:{" "}
-                  <span className="font-medium">
-                    {tituloModeloRecomendado(resultadoComision.recomendacion)}
-                  </span>
-                  . Punto Pago factura al comercio el total del período según lo
-                  acordado.
+                <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                  Estimación orientativa según volumen y acuerdo por cada pago
+                  procesado con Hub de pagos. Próximamente: cotizador en línea para
+                  mayor precisión.
                 </p>
               </section>
-
-              <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-800">
-                <p className="font-semibold text-slate-900">Ejemplo</p>
-                <p className="mt-2">
-                  Si tus ventas mensuales fueron de{" "}
-                  <span className="font-medium">
-                    {ventasMensualesParseado !== null
-                      ? formatUsd(ventasMensualesParseado)
-                      : "—"}
-                  </span>
-                  , la comisión mensual estimada de Punto Pago sería de{" "}
-                  <span className="font-medium">
-                    {formatUsd(comisionMensualRecomendada(resultadoComision))}
-                  </span>
-                  , con base en el volumen y el modelo visto en esta cotización.
-                </p>
-              </section>
-
-              <p className="mt-8 text-xs leading-relaxed text-slate-500">
-                Cifras referenciales. Vigencia, riesgo y condiciones finales se
-                confirman con el equipo comercial de Punto Pago.
-              </p>
             </>
           )}
+
+          {form.tipoServicioPuntoPago === "cash_out" &&
+            cashOutCargoMensualEstimado !== null && (
+              <>
+                <section className="mt-8">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Volumen mensual estimado (desembolsos)
+                  </h3>
+                  <p className="mt-2 text-xl font-bold text-slate-900">
+                    {formatUsd(parseMontoUsd(form.volumenCashOutMensualUsd) ?? 0)}
+                  </p>
+                </section>
+                <section className="mt-8">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Cargo referencial al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}%)
+                  </h3>
+                  <p className="mt-2 text-2xl font-bold text-brand">
+                    {formatUsd(cashOutCargoMensualEstimado)}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-700">
+                    Punto Pago cobra por cada desembolso según acuerdo comercial.
+                  </p>
+                </section>
+              </>
+            )}
+
+          {form.tipoServicioPuntoPago === "agentes" && (
+            <section className="mt-8">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Set up referencial
+              </h3>
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                {formatUsd(SETUP_FEE_HUB_REF_USD)}
+              </p>
+              <p className="mt-3 text-sm text-slate-700">
+                Cotización detallada para agentes en preparación (mismo esquema
+                referencial que Hub de pagos).
+              </p>
+            </section>
+          )}
+
+          <p className="mt-8 text-xs leading-relaxed text-slate-500">
+            Cifras referenciales. Vigencia, riesgo y condiciones finales se confirman
+            con el equipo comercial de Punto Pago.
+          </p>
         </article>
 
         <article
