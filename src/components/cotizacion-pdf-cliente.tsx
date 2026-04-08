@@ -441,11 +441,11 @@ export function CotizacionPdfClienteDocument({
           <div className="flex-1 overflow-visible pr-2 sm:pr-6">
             <div className="inline-block max-w-full pr-3 sm:pr-5">
               <img
-                src="/brand/punto-pago-logo-white.svg"
+                src="/brand/punto-pago-logo-cotizacion-pdf.png"
                 alt="Punto Pago"
-                width={220}
-                height={118}
-                className="block h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_0_6px_rgba(255,255,255,0.22)]"
+                width={240}
+                height={120}
+                className="block h-11 w-auto max-w-full object-contain object-left"
               />
             </div>
             <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-[1.65rem]">
