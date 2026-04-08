@@ -21,7 +21,6 @@ import {
 } from "@/lib/integracion";
 import {
   createEmptyForm,
-  defaultCondiciones,
   DEFAULT_COMISION_FIJA_USD,
   DEFAULT_COMISION_PORCENTAJE,
   type CotizacionForm,
@@ -315,9 +314,8 @@ export function CotizadorApp() {
             )}
             {!cotizacionCompleta && validoMinimo && (
               <p className="mt-3 text-sm text-amber-200">
-                Completa industria, modalidad técnica, transaccionalidad, integración,
-                vendedor y demás campos requeridos para habilitar PDF y registro en
-                Sheets.
+                Completa industria, modalidad técnica, transaccionalidad e integración
+                para habilitar PDF y registro en Sheets.
               </p>
             )}
           </div>
@@ -768,76 +766,6 @@ export function CotizadorApp() {
             </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-6">
-            <h3 className="text-base font-semibold text-slate-900">
-              6. Producto y notas
-            </h3>
-            <div className="mt-4 grid gap-4">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
-                  Producto o solución de interés
-                </span>
-                <input
-                  className={inputClass}
-                  value={form.productoInteres}
-                  onChange={(e) => setField("productoInteres", e.target.value)}
-                  placeholder="Ej. Terminal, link de pago, API…"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
-                  Observaciones para el cliente
-                </span>
-                <textarea
-                  rows={3}
-                  className={inputClass}
-                  value={form.observaciones}
-                  onChange={(e) => setField("observaciones", e.target.value)}
-                  placeholder="Plazos, condiciones especiales, acuerdos adicionales…"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-100 pt-6">
-            <h3 className="text-base font-semibold text-slate-900">
-              7. Vendedor y condiciones
-            </h3>
-            <div className="mt-4 space-y-4">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
-              Nombre del vendedor
-            </span>
-            <input
-              className={inputClass}
-              value={form.nombreVendedor}
-              onChange={(e) => setField("nombreVendedor", e.target.value)}
-              placeholder="Tu nombre"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
-              Condiciones comerciales (aparecen en la cotización)
-            </span>
-            <textarea
-              rows={4}
-              className={`${inputClass} text-sm`}
-              value={form.condicionesComerciales}
-              onChange={(e) => setField("condicionesComerciales", e.target.value)}
-            />
-            <button
-              type="button"
-              className="mt-2 text-sm text-brand hover:underline"
-              onClick={() => setField("condicionesComerciales", defaultCondiciones)}
-            >
-              Restaurar texto estándar
-            </button>
-          </label>
-            </div>
-          </div>
-
           <div
             className="no-print rounded-2xl border-2 border-brand/50 bg-gradient-to-br from-brand/[0.07] to-white p-6 shadow-sm"
             aria-label="Exportar cotización para el cliente"
@@ -859,8 +787,8 @@ export function CotizadorApp() {
             </button>
             {!cotizacionCompleta && (
               <p className="mt-3 text-sm font-medium text-amber-800">
-                Completa industria, modalidad, transaccionalidad, integración y
-                vendedor para habilitar el PDF.
+                Completa industria, modalidad, transaccionalidad e integración para
+                habilitar el PDF.
               </p>
             )}
           </div>

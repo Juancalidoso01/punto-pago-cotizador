@@ -10,7 +10,6 @@ export function esCotizacionCompleta(
   if (!form.empresa.trim() || !form.email.trim().includes("@")) return false;
   if (!form.industriaId.trim()) return false;
   if (!form.tecnologiaStack.trim()) return false;
-  if (!form.nombreVendedor.trim()) return false;
   if (
     !form.reporteFtpEmailSinBd &&
     form.modalidadTecnica !== "webservices" &&
