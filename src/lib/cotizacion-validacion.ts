@@ -1,5 +1,6 @@
 import type { CotizacionForm } from "@/lib/cotizacion-types";
 import { parseEnteroPositivo, parseMontoUsd, type ResultadoComision } from "@/lib/comision";
+import { esEmailFormatoValido } from "@/lib/email";
 import type { ResultadoPrecioIntegracion } from "@/lib/integracion";
 function esCotizacionCompletaKioscos(
   form: CotizacionForm,
@@ -54,7 +55,7 @@ export function esCotizacionCompleta(
   resultadoIntegracion: ResultadoPrecioIntegracion | null,
   resultadoComision: ResultadoComision | null,
 ): boolean {
-  if (!form.empresa.trim() || !form.email.trim().includes("@")) return false;
+  if (!form.empresa.trim() || !esEmailFormatoValido(form.email)) return false;
   if (!form.tipoServicioPuntoPago) return false;
   if (!form.industriaId.trim()) return false;
 

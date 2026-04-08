@@ -132,6 +132,50 @@ export function formatearMontoUsdParaCampo(value: number): string {
   }).format(value);
 }
 
+/**
+ * Formatea monto USD mientras se escribe: prefijo `$ `, miles con coma, hasta 2 decimales.
+ * Evita confusión con ceros en cifras grandes; mantiene un punto final (ej. `1,234.`) mientras se escribe.
+ */
+export function formatearMontoUsdEnVivo(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed === "") return "";
+
+  const cleaned = trimmed.replace(/^\$\s*/, "").replace(/[$,\s]/g, "");
+  let s = "";
+  let dotSeen = false;
+  for (const ch of cleaned) {
+    if (ch >= "0" && ch <= "9") s += ch;
+    else if (ch === "." && !dotSeen) {
+      s += ".";
+      dotSeen = true;
+    }
+  }
+
+  const firstDot = s.indexOf(".");
+  let intRaw = firstDot === -1 ? s : s.slice(0, firstDot);
+  const afterDot = firstDot === -1 ? "" : s.slice(firstDot + 1).slice(0, 2);
+
+  if (intRaw === "") {
+    if (firstDot === -1) return "";
+    if (afterDot !== "") return `$ 0.${afterDot}`;
+    return `$ 0.`;
+  }
+
+  if (/^0+$/.test(intRaw)) intRaw = "0";
+  else if (intRaw.length > 1) intRaw = intRaw.replace(/^0+/, "") || "0";
+
+  const intFmt = intRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const trailingDotOnly = firstDot !== -1 && afterDot === "" && s.endsWith(".");
+
+  let out = intFmt;
+  if (firstDot !== -1) {
+    out += ".";
+    if (!trailingDotOnly || afterDot.length > 0) out += afterDot;
+  }
+
+  return `$ ${out}`;
+}
+
 /** Miles con coma para cantidades enteras (transacciones/mes). */
 export function formatearEnteroParaCampo(value: number): string {
   return new Intl.NumberFormat("en-US", {

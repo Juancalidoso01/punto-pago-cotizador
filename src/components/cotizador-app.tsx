@@ -16,6 +16,7 @@ import {
   formatPct,
   formatUsd,
   formatearEnteroParaCampo,
+  formatearMontoUsdEnVivo,
   formatearMontoUsdParaCampo,
   parseEnteroPositivo,
   parseMontoUsd,
@@ -53,6 +54,7 @@ import {
   formatSoloFechaLarga,
 } from "@/lib/fecha-cotizacion";
 import { exportarCotizacionPdf } from "@/lib/exportar-pdf-cotizacion";
+import { esEmailFormatoValido } from "@/lib/email";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
@@ -91,6 +93,8 @@ export function CotizadorApp() {
   const [fechaExportacionPdf, setFechaExportacionPdf] = useState<Date | null>(
     null,
   );
+  /** Tras salir del campo correo, mostrar error de formato si aplica */
+  const [correoValidacionVisible, setCorreoValidacionVisible] = useState(false);
 
   useEffect(() => {
     setRef(generarRefCotizacion());
@@ -110,7 +114,7 @@ export function CotizadorApp() {
         if (raw === "") return prev;
         const n = parseMontoUsd(raw);
         if (n === null) return prev;
-        const formatted = formatearMontoUsdParaCampo(n);
+        const formatted = `$ ${formatearMontoUsdParaCampo(n)}`;
         if (prev[campo] === formatted) return prev;
         return { ...prev, [campo]: formatted };
       });
@@ -128,6 +132,13 @@ export function CotizadorApp() {
       const n = parseInt(digits, 10);
       if (!Number.isFinite(n)) return;
       setField("cantidadVentasMensuales", formatearEnteroParaCampo(n));
+    },
+    [],
+  );
+
+  const onChangeVentasMensualesUsd = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      setField("ventasMensualesTotalUsd", formatearMontoUsdEnVivo(e.target.value));
     },
     [],
   );
@@ -198,7 +209,11 @@ export function CotizadorApp() {
   }
 
   const validoMinimo =
-    form.empresa.trim().length > 0 && form.email.trim().includes("@");
+    form.empresa.trim().length > 0 && esEmailFormatoValido(form.email);
+
+  const correoFormatoInvalido =
+    form.email.trim() !== "" && !esEmailFormatoValido(form.email);
+  const mostrarErrorCorreo = correoValidacionVisible && correoFormatoInvalido;
 
   const ventasMensualesParseado = useMemo(
     () => parseMontoUsd(form.ventasMensualesTotalUsd),
@@ -516,12 +531,32 @@ export function CotizadorApp() {
                 </span>
                 <input
                   type="email"
-                  className={inputClass}
+                  className={`${inputClass} ${
+                    mostrarErrorCorreo
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+                      : ""
+                  }`}
                   value={form.email}
                   onChange={(e) => setField("email", e.target.value)}
+                  onBlur={() => setCorreoValidacionVisible(true)}
                   placeholder="contacto@empresa.com"
                   autoComplete="email"
+                  aria-invalid={mostrarErrorCorreo}
+                  aria-describedby={
+                    mostrarErrorCorreo ? "correo-contacto-error" : undefined
+                  }
                 />
+                {mostrarErrorCorreo && (
+                  <span
+                    id="correo-contacto-error"
+                    className="mt-1 block text-xs text-red-600"
+                    role="alert"
+                  >
+                    Usa un correo con @ y dominio con punto (ej.{" "}
+                    <span className="whitespace-nowrap">nombre@empresa.com</span>
+                    ).
+                  </span>
+                )}
               </label>
 
               <label className="block sm:col-span-2">
@@ -678,11 +713,9 @@ export function CotizadorApp() {
                   inputMode="decimal"
                   autoComplete="off"
                   value={form.ventasMensualesTotalUsd}
-                  onChange={(e) =>
-                    setField("ventasMensualesTotalUsd", e.target.value)
-                  }
+                  onChange={onChangeVentasMensualesUsd}
                   onBlur={() => onBlurFormatearMontoUsd("ventasMensualesTotalUsd")}
-                  placeholder="Ej. 125,000"
+                  placeholder="Ej. $ 1,250,000"
                 />
                 <span className="mt-1 block text-xs text-slate-500">
                   Suma de todas las ventas del mes (referencial).
