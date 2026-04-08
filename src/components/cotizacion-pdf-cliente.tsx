@@ -416,7 +416,7 @@ export function CotizacionPdfClienteDocument({
       id="cotizacion-cliente-document"
       className="fixed -left-[9999px] top-0 z-0 w-[794px] overflow-visible bg-[#eef0f8] shadow-sm print:static print:left-auto print:top-auto print:z-auto print:w-full print:max-w-none print:rounded-none print:shadow-none"
     >
-      <header className="relative px-10 pb-16 pt-10 text-white print:px-8 print:pb-14 print:pt-8">
+      <header className="relative overflow-visible px-10 pb-16 pt-10 text-white print:px-8 print:pb-14 print:pt-8">
         <div
           className="absolute inset-0 bg-gradient-to-br from-[#12132a] via-[#2a2d72] to-[#4749b6]"
           aria-hidden
@@ -430,15 +430,17 @@ export function CotizacionPdfClienteDocument({
           }}
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <img
-              src="/brand/punto-pago-logo-white.svg"
-              alt="Punto Pago"
-              width={220}
-              height={118}
-              className="h-10 w-auto max-w-[260px] object-contain object-left drop-shadow-[0_0_12px_rgba(255,255,255,0.35)]"
-            />
+        <div className="relative z-10 flex flex-col gap-6 overflow-visible sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex-1 overflow-visible pr-2 sm:pr-6">
+            <div className="inline-block max-w-full pr-3 sm:pr-5">
+              <img
+                src="/brand/punto-pago-logo-white.svg"
+                alt="Punto Pago"
+                width={220}
+                height={118}
+                className="block h-10 w-auto max-w-full object-contain object-left drop-shadow-[0_0_6px_rgba(255,255,255,0.22)]"
+              />
+            </div>
             <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-[1.65rem]">
               Cotización comercial
             </h1>
