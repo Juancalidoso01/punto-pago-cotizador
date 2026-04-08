@@ -40,6 +40,11 @@ import {
   METODOS_PAGO_INTEGRACION,
   type CotizacionForm,
 } from "@/lib/cotizacion-types";
+import {
+  IMAGEN_ALCANCE_API,
+  IMAGEN_ALCANCE_APP,
+  IMAGEN_ALCANCE_KIOSCOS,
+} from "@/lib/alcance-servicio-kioscos";
 import { buildCotizacionPayload } from "@/lib/cotizacion-payload";
 import { esCotizacionCompleta } from "@/lib/cotizacion-validacion";
 import {
@@ -1180,17 +1185,48 @@ export function CotizadorApp() {
                   integración y pagar el set up, los tres alcances siguientes se habilitan{" "}
                   <strong>sin cargo adicional</strong> por canal.
                 </p>
-                <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+                <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                    <img
+                      src={IMAGEN_ALCANCE_KIOSCOS}
+                      alt=""
+                      className="h-24 w-full object-cover sm:h-28"
+                    />
+                  </div>
+                  <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                    <img
+                      src={IMAGEN_ALCANCE_APP}
+                      alt=""
+                      className="h-24 w-full object-cover sm:h-28"
+                    />
+                  </div>
+                  <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                    <img
+                      src={IMAGEN_ALCANCE_API}
+                      alt=""
+                      className="h-24 w-full object-cover sm:h-28"
+                    />
+                  </div>
+                </div>
+                <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-slate-700">
                   <li>
-                    <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: el{" "}
-                    <strong>botón de recaudo</strong> sin cargo extra por visibilidad en esos
-                    canales; forma parte del mismo esquema de integración cotizado aquí.
+                    <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: tu comercio
+                    aparecerá dentro de nuestra app, que tiene más de{" "}
+                    <strong>150 mil usuarios activos al mes</strong>, y también en nuestra red de
+                    kioscos. Esto significa que más personas podrán encontrarte y pagarte
+                    fácilmente. En la app, los clientes pueden hacer recargas y pagos usando
+                    tarjetas bancarias, incluyendo <strong>Clave</strong>, además de opciones como{" "}
+                    <strong>Yappy</strong> y <strong>transferencias ACH</strong>. Todo esto sin
+                    costos adicionales por estar visible en estos canales.
                   </li>
                   <li>
-                    <strong>Bancos y billeteras digitales:</strong> convenios Punto Pago; los
-                    usuarios pueden pagar desde <strong>banca en línea o apps</strong>; el comercio
-                    puede <strong>incrementar la transaccionalidad</strong> reutilizando esas
-                    integraciones.
+                    <strong>Bancos y billeteras digitales:</strong> Punto Pago ya tiene acuerdos
+                    con bancos y billeteras digitales que permiten a los usuarios pagar servicios
+                    directamente desde sus apps o banca en línea. Al integrarte con nosotros, tu
+                    comercio se conecta automáticamente a estos canales, sin necesidad de hacer
+                    integraciones por separado con cada banco. Esto facilita que más clientes te
+                    paguen desde donde ya manejan su dinero, aumentando la cantidad de pagos que
+                    puedes recibir.
                   </li>
                 </ul>
               </section>
@@ -1400,7 +1436,7 @@ export function CotizadorApp() {
                 : "Vigencia: 15 días naturales desde la exportación del PDF (fecha al generar el documento).";
             const bloqueAlcance =
               form.tipoServicioPuntoPago === "kioscos"
-                ? `\nAlcance del servicio (integración cotizada en este documento):\n- Cobro Punto Pago: fee de implementación (set up) y fee mensual (comisión). Los tres alcances se incluyen sin cargo adicional por canal al pagar el set up.\n- App y red de kioscos: botón de recaudo sin cargo extra por visibilidad en esos canales.\n- Bancos y billeteras: convenios; pago desde banca en línea o apps; mayor transaccionalidad.\n`
+                ? `\nAlcance del servicio (integración cotizada en este documento):\n- Cobro Punto Pago: fee de implementación (set up) y fee mensual (comisión). Los tres alcances se incluyen sin cargo adicional por canal al pagar el set up.\n- App y red de kioscos: visibilidad en app (150k+ usuarios activos/mes) y red de kioscos; pagos con tarjetas, Clave, Yappy, ACH; sin costo extra por visibilidad.\n- Bancos y billeteras: acuerdos existentes; al integrarte, conexión a esos canales sin integrar con cada banco por separado.\n`
                 : form.tipoServicioPuntoPago === "hub_pagos"
                   ? `\nAlcance del servicio: Hub de pagos — concentración y procesamiento de pagos; detalle operativo con el equipo comercial.\n`
                   : form.tipoServicioPuntoPago === "cash_out"

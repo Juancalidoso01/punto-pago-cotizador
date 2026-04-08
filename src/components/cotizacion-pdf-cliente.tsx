@@ -22,90 +22,16 @@ import {
 } from "@/lib/fecha-cotizacion";
 import type { ResultadoPrecioIntegracion } from "@/lib/integracion";
 import {
+  IMAGEN_ALCANCE_API,
+  IMAGEN_ALCANCE_APP,
+  IMAGEN_ALCANCE_KIOSCOS,
+} from "@/lib/alcance-servicio-kioscos";
+import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
 } from "@/lib/tipo-servicio-punto-pago";
 
 const DIAS_VALIDEZ_COTIZACION = 15;
-
-/** Iconos decorativos para alcance (SVG inline, legibles en PDF) */
-function IconoAppPuntoPago() {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      className="h-14 w-14 shrink-0 text-brand"
-      aria-hidden
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="8"
-        y="4"
-        width="32"
-        height="40"
-        rx="6"
-        fill="#eef0ff"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <circle cx="24" cy="36" r="2" fill="currentColor" />
-      <path d="M16 12h16v14H16z" fill="#c7c9f0" />
-      <path d="M18 28h12v2H18zm0-4h8v2h-8z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function IconoRedKioscos() {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      className="h-14 w-14 shrink-0 text-brand"
-      aria-hidden
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="4"
-        y="14"
-        width="40"
-        height="26"
-        rx="3"
-        fill="#eef0ff"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <rect x="10" y="20" width="28" height="14" rx="1" fill="#c7c9f0" />
-      <path d="M24 8v6" stroke="currentColor" strokeWidth="2" fill="none" />
-      <rect x="20" y="4" width="8" height="6" rx="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function IconoInterconexionApi() {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      className="h-14 w-14 shrink-0 text-brand"
-      aria-hidden
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <circle cx="12" cy="24" r="6" fill="#4749B6" />
-      <circle cx="36" cy="24" r="6" fill="#6b6dcc" />
-      <circle cx="24" cy="12" r="5" fill="#9ca3d8" />
-      <path
-        d="M17 20l7-5 7 5M17 28l7 5 7-5"
-        stroke="#94a3b8"
-        strokeWidth="2"
-        fill="none"
-      />
-      <path
-        d="M18 24h12"
-        stroke="#4749B6"
-        strokeWidth="2"
-        strokeDasharray="3 2"
-        fill="none"
-      />
-    </svg>
-  );
-}
 
 function BloqueAlcanceServicio({
   tipoServicio,
@@ -134,47 +60,58 @@ function BloqueAlcanceServicio({
         <div className="mt-4 grid grid-cols-3 gap-3 border-y border-slate-100 py-4">
           <div
             className="flex flex-col items-center justify-center"
-            aria-label="App Punto Pago"
+            aria-label="Red de kioscos"
           >
-            <div className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
-              <IconoAppPuntoPago />
+            <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
               <img
-                src="/brand/punto-pago-logo.svg"
+                src={IMAGEN_ALCANCE_KIOSCOS}
                 alt=""
-                className="h-5 w-auto max-w-[100px] opacity-90"
-                aria-hidden
+                className="h-28 w-full object-cover sm:h-32"
               />
             </div>
           </div>
           <div
             className="flex flex-col items-center justify-center"
-            aria-label="Red de kioscos"
+            aria-label="App Punto Pago"
           >
-            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
-              <IconoRedKioscos />
+            <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
+              <img
+                src={IMAGEN_ALCANCE_APP}
+                alt=""
+                className="h-28 w-full object-cover sm:h-32"
+              />
             </div>
           </div>
           <div
             className="flex flex-col items-center justify-center"
-            aria-label="Ecosistema bancos y billeteras"
+            aria-label="Bancos y billeteras / API"
           >
-            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
-              <IconoInterconexionApi />
+            <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
+              <img
+                src={IMAGEN_ALCANCE_API}
+                alt=""
+                className="h-28 w-full object-cover sm:h-32"
+              />
             </div>
           </div>
         </div>
-        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+        <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-slate-700">
           <li>
-            <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: el{" "}
-            <strong>botón de recaudo</strong> se muestra <strong>sin cargo extra</strong> por
-            visibilidad en esos canales; amplían el alcance de cobro del comercio como parte del
-            mismo esquema de integración cotizado aquí.
+            <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: tu comercio
+            aparecerá dentro de nuestra app, que tiene más de <strong>150 mil usuarios activos al
+            mes</strong>, y también en nuestra red de kioscos. Esto significa que más personas
+            podrán encontrarte y pagarte fácilmente. En la app, los clientes pueden hacer
+            recargas y pagos usando tarjetas bancarias, incluyendo <strong>Clave</strong>, además
+            de opciones como <strong>Yappy</strong> y <strong>transferencias ACH</strong>. Todo
+            esto sin costos adicionales por estar visible en estos canales.
           </li>
           <li>
-            <strong>Bancos y billeteras digitales:</strong> Punto Pago mantiene convenios con
-            entidades donde los usuarios ya pueden pagar desde <strong>banca en línea o
-            apps</strong>. Al integrarse, el comercio se conecta a ese ecosistema y puede{" "}
-            <strong>incrementar la transaccionalidad</strong> reutilizando esas integraciones.
+            <strong>Bancos y billeteras digitales:</strong> Punto Pago ya tiene acuerdos con
+            bancos y billeteras digitales que permiten a los usuarios pagar servicios
+            directamente desde sus apps o banca en línea. Al integrarte con nosotros, tu comercio
+            se conecta automáticamente a estos canales, sin necesidad de hacer integraciones por
+            separado con cada banco. Esto facilita que más clientes te paguen desde donde ya
+            manejan su dinero, aumentando la cantidad de pagos que puedes recibir.
           </li>
         </ul>
       </section>
