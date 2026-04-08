@@ -1,7 +1,8 @@
-/** Imágenes del bloque «Alcance del servicio» (kioscos) — sitio puntopago.net */
-export const IMAGEN_ALCANCE_KIOSCOS =
-  "https://puntopago.net/assets/headcap/6@1.5x.jpg";
-export const IMAGEN_ALCANCE_APP =
-  "https://puntopago.net/assets/feature/7@1.5x.jpg";
-export const IMAGEN_ALCANCE_API =
-  "https://puntopago.net/assets/headcap/2@1.5x.jpg";
+/**
+ * Imágenes del bloque «Alcance del servicio» (kioscos).
+ * Copias locales en /public (mismo origen → PDF/html2canvas sin bloqueo CORS).
+ * Origen: puntopago.net (headcap/feature).
+ */
+export const IMAGEN_ALCANCE_KIOSCOS = "/brand/alcance/kioscos.jpg";
+export const IMAGEN_ALCANCE_APP = "/brand/alcance/app.jpg";
+export const IMAGEN_ALCANCE_API = "/brand/alcance/api.jpg";
