@@ -21,21 +21,56 @@ export type CotizacionForm = {
   estimadoNoBancarizados: string;
   /** Segmento para tabla de precio de integración (ej. banco vs PYME) */
   industriaId: string;
-  /** Stack o plataforma del cliente para integrar */
-  tecnologiaStack: string;
-  /** Detalle si eligió "Otro" o notas técnicas */
+  /** Notas técnicas u operativas adicionales (opcional) */
   tecnologiaDetalle: string;
   /** Activar recaudo / recarga en red de kioscos Punto Pago (suma recargo USD) */
   incluyeRecaudoKioscos: boolean;
   /** Web services vs batch (set up fee según política; ver integracion.ts) */
   modalidadTecnica: "webservices" | "batch" | "";
-  /** Sin BD en cliente: reportes por FTP o correo → set up fijo referencial */
-  reporteFtpEmailSinBd: boolean;
+  /** Web services: protocolo / canal entre sistemas (id de OPCIONES_WS_PROTOCOLO) */
+  integracionWsProtocolo: string;
+  integracionWsProtocoloOtro: string;
+  /** Web services: formato o estándar de datos */
+  integracionWsFormato: string;
+  integracionWsFormatoOtro: string;
+  /** Batch: canal unidireccional (id de OPCIONES_BATCH_CANAL) */
+  integracionBatchCanal: string;
+  integracionBatchCanalOtro: string;
+  /** Forma de pago del set up referencial (opciones comerciales) */
+  metodoPagoIntegracion:
+    | ""
+    | "50_50"
+    | "mensual_5"
+    | "anticipado_total"
+    | "comercial";
   productoInteres: string;
   observaciones: string;
   condicionesComerciales: string;
   nombreVendedor: string;
 };
+
+/** Opciones de pago del set up (referencial; se acuerda con comercial) */
+export const METODOS_PAGO_INTEGRACION: {
+  id: NonNullable<CotizacionForm["metodoPagoIntegracion"]>;
+  label: string;
+}[] = [
+  {
+    id: "50_50",
+    label: "50% anticipo y 50% al culminar la integración",
+  },
+  {
+    id: "mensual_5",
+    label: "Facturación mensual de la integración (referencial, ej. 5 meses)",
+  },
+  {
+    id: "anticipado_total",
+    label: "100% anticipado antes de arrancar el proyecto de integración",
+  },
+  {
+    id: "comercial",
+    label: "A coordinar con el equipo comercial",
+  },
+];
 
 export const defaultCondiciones =
   "Validez de la presente cotización: 15 días corridos. Condiciones comerciales y tarifas finales sujetas a validación de riesgo y documentación del comercio. Costos de integración y alcance técnico se confirman en kick-off. Montos en dólares estadounidenses (USD).";
@@ -56,11 +91,16 @@ export function createEmptyForm(): CotizacionForm {
     canal: "",
     estimadoNoBancarizados: "",
     industriaId: "",
-    tecnologiaStack: "",
     tecnologiaDetalle: "",
     incluyeRecaudoKioscos: false,
     modalidadTecnica: "",
-    reporteFtpEmailSinBd: false,
+    integracionWsProtocolo: "",
+    integracionWsProtocoloOtro: "",
+    integracionWsFormato: "",
+    integracionWsFormatoOtro: "",
+    integracionBatchCanal: "",
+    integracionBatchCanalOtro: "",
+    metodoPagoIntegracion: "",
     productoInteres: "",
     observaciones: "",
     condicionesComerciales: defaultCondiciones,

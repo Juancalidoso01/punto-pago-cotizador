@@ -23,15 +23,21 @@ import {
 import {
   buscarIndustria,
   calcularPrecioIntegracion,
+  etiquetaPorId,
   industriasEnGrupos,
+  OPCIONES_BATCH_CANAL,
+  OPCIONES_WS_FORMATO,
+  OPCIONES_WS_PROTOCOLO,
   RECARGO_RECAUDO_KIOSCOS_USD,
-  SETUP_FEE_FTP_EMAIL_USD,
-  TECNOLOGIAS_STACK,
+  SETUP_FEE_BATCH_USD,
+  SETUP_FEE_WEBSERVICES_BANCO_USD,
+  SETUP_FEE_WEBSERVICES_USD,
 } from "@/lib/integracion";
 import {
   createEmptyForm,
   DEFAULT_COMISION_FIJA_USD,
   DEFAULT_COMISION_PORCENTAJE,
+  METODOS_PAGO_INTEGRACION,
   type CotizacionForm,
 } from "@/lib/cotizacion-types";
 import { buildCotizacionPayload } from "@/lib/cotizacion-payload";
@@ -220,7 +226,6 @@ export function CotizadorApp() {
         ? calcularPrecioIntegracion({
             industriaId: form.industriaId,
             incluyeRecaudoKioscos: form.incluyeRecaudoKioscos,
-            reporteFtpEmailSinBd: form.reporteFtpEmailSinBd,
             modalidadTecnica: form.modalidadTecnica,
           })
         : null,
@@ -228,7 +233,6 @@ export function CotizadorApp() {
       form.tipoServicioPuntoPago,
       form.industriaId,
       form.incluyeRecaudoKioscos,
-      form.reporteFtpEmailSinBd,
       form.modalidadTecnica,
     ],
   );
@@ -283,6 +287,45 @@ export function CotizadorApp() {
 
   const volumenCashOutUsd =
     parseMontoUsd(form.volumenCashOutMensualUsd) ?? 0;
+
+  const textoResumenIntegracionKioscos = useMemo(() => {
+    if (form.modalidadTecnica === "webservices") {
+      const prot =
+        form.integracionWsProtocolo === "otro"
+          ? form.integracionWsProtocoloOtro.trim()
+          : etiquetaPorId(OPCIONES_WS_PROTOCOLO, form.integracionWsProtocolo);
+      const fmt =
+        form.integracionWsFormato === "otro"
+          ? form.integracionWsFormatoOtro.trim()
+          : etiquetaPorId(OPCIONES_WS_FORMATO, form.integracionWsFormato);
+      return `Web services · Conexión: ${prot || "—"} · Formato / datos: ${fmt || "—"}`;
+    }
+    if (form.modalidadTecnica === "batch") {
+      const canal =
+        form.integracionBatchCanal === "otro_unidireccional"
+          ? form.integracionBatchCanalOtro.trim()
+          : etiquetaPorId(OPCIONES_BATCH_CANAL, form.integracionBatchCanal);
+      return `Batch · Canal unidireccional: ${canal || "—"}`;
+    }
+    return "";
+  }, [
+    form.modalidadTecnica,
+    form.integracionWsProtocolo,
+    form.integracionWsProtocoloOtro,
+    form.integracionWsFormato,
+    form.integracionWsFormatoOtro,
+    form.integracionBatchCanal,
+    form.integracionBatchCanalOtro,
+  ]);
+
+  const etiquetaMetodoPagoIntegracion = useMemo(
+    () =>
+      form.metodoPagoIntegracion
+        ? METODOS_PAGO_INTEGRACION.find((m) => m.id === form.metodoPagoIntegracion)
+            ?.label ?? form.metodoPagoIntegracion
+        : "",
+    [form.metodoPagoIntegracion],
+  );
 
   const inputClass =
     "w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand/20 focus:border-brand focus:ring-2";
@@ -744,27 +787,29 @@ export function CotizadorApp() {
               6. Integración e implementación (USD)
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              El <strong>set up fee</strong> depende de la <strong>modalidad
-              técnica</strong>: integración por <strong>web services</strong> o por{" "}
-              <strong>batch</strong>. Si el cliente <strong>no tiene base de datos</strong>{" "}
-              y los pagos se reportan por <strong>FTP o correo</strong>, aplica un
-              set up referencial de {formatUsd(SETUP_FEE_FTP_EMAIL_USD)}. Luego indica
-              la plataforma del cliente y si aplica recaudo en kioscos.
+              Solo hay dos modalidades: <strong>Web services</strong> (conexión en
+              línea entre sistemas; protocolo y formato de datos) o{" "}
+              <strong>Batch</strong> (FTP, SFTP, correo u otra vía unidireccional entre
+              empresas con poca tecnología). Montos referenciales de set up:{" "}
+              <strong>{formatUsd(SETUP_FEE_WEBSERVICES_USD)}</strong> en web services
+              ( <strong>{formatUsd(SETUP_FEE_WEBSERVICES_BANCO_USD)}</strong> si el
+              segmento es banco comercial) y{" "}
+              <strong>{formatUsd(SETUP_FEE_BATCH_USD)}</strong> en batch. El pago del
+              set up puede acordarse en cuotas (opciones abajo).
             </p>
 
             <div className="mt-4 space-y-4">
               <div>
                 <span className="mb-2 block text-sm font-medium text-slate-700">
-                  Modalidad de integración (set up fee)
+                  Modalidad de integración (set up fee){" "}
+                  <span className="text-red-600">*</span>
                 </span>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 ${
-                      form.reporteFtpEmailSinBd
-                        ? "border-slate-200 bg-slate-50 opacity-60"
-                        : form.modalidadTecnica === "webservices"
-                          ? "border-brand bg-brand/5 ring-1 ring-brand/25"
-                          : "border-slate-200 bg-white hover:bg-slate-50"
+                      form.modalidadTecnica === "webservices"
+                        ? "border-brand bg-brand/5 ring-1 ring-brand/25"
+                        : "border-slate-200 bg-white hover:bg-slate-50"
                     }`}
                   >
                     <input
@@ -772,25 +817,28 @@ export function CotizadorApp() {
                       name="modalidadTecnica"
                       className="h-4 w-4 border-slate-300 text-brand focus:ring-brand"
                       checked={form.modalidadTecnica === "webservices"}
-                      disabled={form.reporteFtpEmailSinBd}
-                      onChange={() => setField("modalidadTecnica", "webservices")}
+                      onChange={() => {
+                        setField("modalidadTecnica", "webservices");
+                        setField("integracionBatchCanal", "");
+                        setField("integracionBatchCanalOtro", "");
+                      }}
                     />
                     <span>
                       <span className="font-medium text-slate-900">
                         Web services
                       </span>
                       <span className="mt-0.5 block text-xs text-slate-600">
-                        API, webhooks, integración en línea con sistemas del cliente.
+                        {formatUsd(SETUP_FEE_WEBSERVICES_USD)} (
+                        {formatUsd(SETUP_FEE_WEBSERVICES_BANCO_USD)} banco comercial).
+                        Protocolo entre sistemas y formato de datos (JSON, XML, etc.).
                       </span>
                     </span>
                   </label>
                   <label
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 ${
-                      form.reporteFtpEmailSinBd
-                        ? "border-slate-200 bg-slate-50 opacity-60"
-                        : form.modalidadTecnica === "batch"
-                          ? "border-brand bg-brand/5 ring-1 ring-brand/25"
-                          : "border-slate-200 bg-white hover:bg-slate-50"
+                      form.modalidadTecnica === "batch"
+                        ? "border-brand bg-brand/5 ring-1 ring-brand/25"
+                        : "border-slate-200 bg-white hover:bg-slate-50"
                     }`}
                   >
                     <input
@@ -798,62 +846,164 @@ export function CotizadorApp() {
                       name="modalidadTecnica"
                       className="h-4 w-4 border-slate-300 text-brand focus:ring-brand"
                       checked={form.modalidadTecnica === "batch"}
-                      disabled={form.reporteFtpEmailSinBd}
-                      onChange={() => setField("modalidadTecnica", "batch")}
+                      onChange={() => {
+                        setField("modalidadTecnica", "batch");
+                        setField("integracionWsProtocolo", "");
+                        setField("integracionWsProtocoloOtro", "");
+                        setField("integracionWsFormato", "");
+                        setField("integracionWsFormatoOtro", "");
+                      }}
                     />
                     <span>
                       <span className="font-medium text-slate-900">Batch</span>
                       <span className="mt-0.5 block text-xs text-slate-600">
-                        Archivos por lotes, procesos programados (no tiempo real).
+                        {formatUsd(SETUP_FEE_BATCH_USD)}. FTP, SFTP, reportería por
+                        correo u otra comunicación unidireccional.
                       </span>
                     </span>
                   </label>
                 </div>
               </div>
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/50 p-4">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand"
-                  checked={form.reporteFtpEmailSinBd}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    setField("reporteFtpEmailSinBd", v);
-                    if (v) setField("modalidadTecnica", "");
-                  }}
-                />
-                <span>
-                  <span className="font-medium text-slate-900">
-                    Sin base de datos en el cliente: reporte por FTP o correo
-                  </span>
-                  <span className="mt-1 block text-sm text-slate-600">
-                    Punto Pago entrega reportes de pagos al área que aplica cobros.
-                    Set up fee referencial: {formatUsd(SETUP_FEE_FTP_EMAIL_USD)} (anula
-                    la opción web services / batch para el monto).
-                  </span>
-                </span>
-              </label>
-            </div>
+              {form.modalidadTecnica === "webservices" && (
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
+                  <p className="text-sm font-medium text-slate-800">
+                    Conexión y formato (para detalle en kick-off con comercial)
+                  </p>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">
+                      Protocolo o canal de conexión entre sistemas{" "}
+                      <span className="text-red-600">*</span>
+                    </span>
+                    <select
+                      className={`${inputClass} bg-white`}
+                      value={form.integracionWsProtocolo}
+                      onChange={(e) =>
+                        setField("integracionWsProtocolo", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccionar…</option>
+                      {OPCIONES_WS_PROTOCOLO.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    {form.integracionWsProtocolo === "otro" && (
+                      <input
+                        className={`${inputClass} mt-2`}
+                        value={form.integracionWsProtocoloOtro}
+                        onChange={(e) =>
+                          setField("integracionWsProtocoloOtro", e.target.value)
+                        }
+                        placeholder="Describe el protocolo o canal"
+                      />
+                    )}
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">
+                      Formato o estándar de intercambio de datos{" "}
+                      <span className="text-red-600">*</span>
+                    </span>
+                    <select
+                      className={`${inputClass} bg-white`}
+                      value={form.integracionWsFormato}
+                      onChange={(e) =>
+                        setField("integracionWsFormato", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccionar…</option>
+                      {OPCIONES_WS_FORMATO.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    {form.integracionWsFormato === "otro" && (
+                      <input
+                        className={`${inputClass} mt-2`}
+                        value={form.integracionWsFormatoOtro}
+                        onChange={(e) =>
+                          setField("integracionWsFormatoOtro", e.target.value)
+                        }
+                        placeholder="Ej. esquema XML, versión API, etc."
+                      />
+                    )}
+                  </label>
+                </div>
+              )}
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {form.modalidadTecnica === "batch" && (
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
+                  <p className="text-sm font-medium text-slate-800">
+                    Canal unidireccional (batch)
+                  </p>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">
+                      Cómo se entrega o recibe la información{" "}
+                      <span className="text-red-600">*</span>
+                    </span>
+                    <select
+                      className={`${inputClass} bg-white`}
+                      value={form.integracionBatchCanal}
+                      onChange={(e) =>
+                        setField("integracionBatchCanal", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccionar…</option>
+                      {OPCIONES_BATCH_CANAL.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    {form.integracionBatchCanal === "otro_unidireccional" && (
+                      <input
+                        className={`${inputClass} mt-2`}
+                        value={form.integracionBatchCanalOtro}
+                        onChange={(e) =>
+                          setField("integracionBatchCanalOtro", e.target.value)
+                        }
+                        placeholder="Describe la vía (ej. buzón, SFTP particular, etc.)"
+                      />
+                    )}
+                  </label>
+                </div>
+              )}
+
               <label className="block sm:col-span-2">
                 <span className="mb-1 block text-sm font-medium text-slate-700">
-                  Tecnología o plataforma del cliente
+                  Forma de pago del set up (referencial){" "}
+                  <span className="text-red-600">*</span>
                 </span>
                 <select
                   className={`${inputClass} bg-white`}
-                  value={form.tecnologiaStack}
-                  onChange={(e) => setField("tecnologiaStack", e.target.value)}
+                  value={form.metodoPagoIntegracion}
+                  onChange={(e) =>
+                    setField(
+                      "metodoPagoIntegracion",
+                      e.target.value as CotizacionForm["metodoPagoIntegracion"],
+                    )
+                  }
                 >
                   <option value="">Seleccionar…</option>
-                  {TECNOLOGIAS_STACK.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
+                  {METODOS_PAGO_INTEGRACION.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
                     </option>
                   ))}
                 </select>
+                <span className="mt-1 block text-xs text-slate-500">
+                  Referencia para negociación; el acuerdo final lo confirma comercial.
+                </span>
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  Notas adicionales de integración (opcional)
+                </span>
                 <input
-                  className={`${inputClass} mt-2`}
+                  className={inputClass}
                   value={form.tecnologiaDetalle}
                   onChange={(e) => setField("tecnologiaDetalle", e.target.value)}
                   placeholder="Detalle técnico, URLs, versión de ERP, etc."
@@ -891,9 +1041,9 @@ export function CotizadorApp() {
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
               {!resultadoIntegracion ? (
                 <p className="text-sm text-slate-600">
-                  Elige <strong>industria</strong> y, si no aplica FTP/correo,{" "}
-                  <strong>web services</strong> o <strong>batch</strong>, para ver el
-                  set up fee referencial.
+                  Elige <strong>industria</strong>, <strong>web services</strong> o{" "}
+                  <strong>batch</strong>, completa protocolo/formato o canal batch, y la{" "}
+                  <strong>forma de pago</strong> del set up para ver el monto referencial.
                 </p>
               ) : (
                 <dl className="space-y-2 text-sm">
@@ -1117,14 +1267,25 @@ export function CotizadorApp() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Tecnología del cliente</dt>
+                    <dt className="text-slate-500">Integración (resumen)</dt>
                     <dd className="font-medium text-slate-900">
-                      {form.tecnologiaStack || "—"}
-                      {form.tecnologiaDetalle.trim()
-                        ? ` · ${form.tecnologiaDetalle.trim()}`
-                        : ""}
+                      {textoResumenIntegracionKioscos || "—"}
                     </dd>
                   </div>
+                  <div>
+                    <dt className="text-slate-500">Pago del set up (referencial)</dt>
+                    <dd className="font-medium text-slate-900">
+                      {etiquetaMetodoPagoIntegracion || "—"}
+                    </dd>
+                  </div>
+                  {form.tecnologiaDetalle.trim() ? (
+                    <div>
+                      <dt className="text-slate-500">Notas adicionales</dt>
+                      <dd className="font-medium text-slate-900">
+                        {form.tecnologiaDetalle.trim()}
+                      </dd>
+                    </div>
+                  ) : null}
                   <div>
                     <dt className="text-slate-500">Recaudo en red de kioscos</dt>
                     <dd className="font-medium text-slate-900">
@@ -1267,7 +1428,10 @@ export function CotizadorApp() {
                     : form.tipoServicioPuntoPago === "agentes"
                       ? `\nAlcance del servicio: Agentes — esquema referencial; detalle con Punto Pago.\n`
                       : "";
-            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Reporte FTP/correo sin BD: ${form.reporteFtpEmailSinBd ? "Sí" : "No"}\n- Tecnología: ${form.tecnologiaStack || "—"}${form.tecnologiaDetalle.trim() ? ` (${form.tecnologiaDetalle.trim()})` : ""}\n- Recaudo red kioscos: ${form.incluyeRecaudoKioscos ? `Sí (+${formatUsd(RECARGO_RECAUDO_KIOSCOS_USD)})` : "No"}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
+            const notasIntegracion = form.tecnologiaDetalle.trim()
+              ? `\n- Notas integración: ${form.tecnologiaDetalle.trim()}`
+              : "";
+            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Recaudo red kioscos: ${form.incluyeRecaudoKioscos ? `Sí (+${formatUsd(RECARGO_RECAUDO_KIOSCOS_USD)})` : "No"}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
             const bloqueComision = resultadoComision
               ? resultadoComision.comisionSoloPorcentaje
                 ? `\n\nComisión (referencial — política 5% segmento):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- ${textoExplicativoComision(resultadoComision)}`

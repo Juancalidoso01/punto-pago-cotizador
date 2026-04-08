@@ -5,8 +5,17 @@
  */
 export const RECARGO_RECAUDO_KIOSCOS_USD = 2000;
 
-/** Set up fijo cuando el cliente no tiene BD y Punto Pago entrega reportes por FTP o correo */
-export const SETUP_FEE_FTP_EMAIL_USD = 1000;
+/** Batch (FTP, SFTP, correo, vía unidireccional): set up referencial */
+export const SETUP_FEE_BATCH_USD = 1000;
+
+/** Web services: set up referencial (no banco) */
+export const SETUP_FEE_WEBSERVICES_USD = 5000;
+
+/** Web services: set up referencial para segmento banco comercial */
+export const SETUP_FEE_WEBSERVICES_BANCO_USD = 7000;
+
+/** @deprecated Usar SETUP_FEE_BATCH_USD */
+export const SETUP_FEE_FTP_EMAIL_USD = SETUP_FEE_BATCH_USD;
 
 /** Comisión cash-in / botón kioscos: comparar 3% vs 1.25 USD, o solo 5% (segmentos) */
 export type PoliticaComisionCashIn =
@@ -219,7 +228,7 @@ export const TECNOLOGIAS_STACK = [
   "Otro (especificar abajo)",
 ] as const;
 
-export type ModalidadIntegracion = "webservices" | "batch" | "ftp_email";
+export type ModalidadIntegracion = "webservices" | "batch";
 
 export type ResultadoPrecioIntegracion = {
   industriaLabel: string;
@@ -244,48 +253,84 @@ export function industriasEnGrupos(): { grupo: string; items: IndustriaOpcion[] 
   })).filter((g) => g.items.length > 0);
 }
 
+const ID_BANCO_COMERCIAL = "banco";
+
+/** Protocolo / canal de conexión entre sistemas (web services) */
+export const OPCIONES_WS_PROTOCOLO: { id: string; label: string }[] = [
+  { id: "vpn_sitio_sitio", label: "VPN sitio a sitio (IPSec / túnel)" },
+  { id: "ip_whitelist", label: "IP fija / lista blanca en firewall" },
+  { id: "vpn_ssl", label: "VPN SSL / acceso remoto seguro" },
+  { id: "mtls", label: "mTLS / certificados mutuos" },
+  { id: "api_publica", label: "API expuesta (internet) con OAuth / API keys" },
+  { id: "peering", label: "Peering / interconexión (VPC, Azure, GCP)" },
+  { id: "linea_dedicada", label: "Línea dedicada / MPLS" },
+  { id: "otro", label: "Otro (especificar en notas)" },
+];
+
+/** Formato o estándar de intercambio de datos */
+export const OPCIONES_WS_FORMATO: { id: string; label: string }[] = [
+  { id: "rest_json", label: "REST + JSON" },
+  { id: "soap_xml", label: "SOAP + XML" },
+  { id: "graphql", label: "GraphQL" },
+  { id: "archivo_plano", label: "Archivos planos (CSV, TXT)" },
+  { id: "mensajeria", label: "Mensajería / colas (ej. AS2, MQ)" },
+  { id: "a_definir", label: "A definir en kick-off" },
+  { id: "otro", label: "Otro (especificar en notas)" },
+];
+
+/** Canal batch unidireccional */
+export const OPCIONES_BATCH_CANAL: { id: string; label: string }[] = [
+  { id: "ftp", label: "FTP" },
+  { id: "sftp", label: "SFTP" },
+  { id: "correo", label: "Reportería por correo (adjuntos)" },
+  { id: "otro_unidireccional", label: "Otra vía unidireccional (especificar)" },
+];
+
+export function etiquetaPorId(
+  lista: { id: string; label: string }[],
+  id: string,
+): string {
+  return lista.find((x) => x.id === id)?.label ?? id;
+}
+
 export function calcularPrecioIntegracion(input: {
   industriaId: string;
   incluyeRecaudoKioscos: boolean;
-  /** Sin BD del cliente: reportes por FTP o correo → set up fijo */
-  reporteFtpEmailSinBd: boolean;
-  /** Obligatorio si no es FTP/correo: define cómo se cotiza el set up */
   modalidadTecnica: "webservices" | "batch" | "";
 }): ResultadoPrecioIntegracion | null {
   const ind = buscarIndustria(input.industriaId);
   if (!ind) return null;
 
-  const recargo = input.incluyeRecaudoKioscos ? RECARGO_RECAUDO_KIOSCOS_USD : 0;
-
-  if (input.reporteFtpEmailSinBd) {
-    return {
-      industriaLabel: ind.label,
-      precioBaseUsd: SETUP_FEE_FTP_EMAIL_USD,
-      incluyeRecaudoKioscos: input.incluyeRecaudoKioscos,
-      recargoKioscosUsd: recargo,
-      totalUsd: SETUP_FEE_FTP_EMAIL_USD + recargo,
-      modalidad: "ftp_email",
-      resumenModalidad:
-        "Integración por reporte (FTP o correo; sin base de datos en el cliente) — set up fee referencial",
-    };
-  }
-
   if (input.modalidadTecnica !== "webservices" && input.modalidadTecnica !== "batch") {
     return null;
   }
 
-  const base = ind.precioIntegracionBaseUsd;
+  const recargo = input.incluyeRecaudoKioscos ? RECARGO_RECAUDO_KIOSCOS_USD : 0;
   const esWs = input.modalidadTecnica === "webservices";
+  const esBanco = input.industriaId === ID_BANCO_COMERCIAL;
+
+  let precioBaseUsd: number;
+  let resumenModalidad: string;
+
+  if (esWs) {
+    precioBaseUsd = esBanco
+      ? SETUP_FEE_WEBSERVICES_BANCO_USD
+      : SETUP_FEE_WEBSERVICES_USD;
+    resumenModalidad = esBanco
+      ? `Web services — set up fee referencial ${SETUP_FEE_WEBSERVICES_BANCO_USD.toLocaleString("en-US")} USD (banco comercial / universal)`
+      : `Web services — set up fee referencial ${SETUP_FEE_WEBSERVICES_USD.toLocaleString("en-US")} USD`;
+  } else {
+    precioBaseUsd = SETUP_FEE_BATCH_USD;
+    resumenModalidad = `Batch (FTP, SFTP, correo u otra vía unidireccional) — set up fee referencial ${SETUP_FEE_BATCH_USD.toLocaleString("en-US")} USD`;
+  }
 
   return {
     industriaLabel: ind.label,
-    precioBaseUsd: base,
+    precioBaseUsd,
     incluyeRecaudoKioscos: input.incluyeRecaudoKioscos,
     recargoKioscosUsd: recargo,
-    totalUsd: base + recargo,
+    totalUsd: precioBaseUsd + recargo,
     modalidad: esWs ? "webservices" : "batch",
-    resumenModalidad: esWs
-      ? "Web services (API / integración en línea) — set up fee por industria"
-      : "Batch (archivos / procesos por lotes) — set up fee por industria",
+    resumenModalidad,
   };
 }

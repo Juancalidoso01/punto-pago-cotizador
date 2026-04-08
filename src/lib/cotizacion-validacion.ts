@@ -6,14 +6,35 @@ function esCotizacionCompletaKioscos(
   resultadoIntegracion: ResultadoPrecioIntegracion | null,
   resultadoComision: ResultadoComision | null,
 ): boolean {
-  if (!form.tecnologiaStack.trim()) return false;
-  if (
-    !form.reporteFtpEmailSinBd &&
-    form.modalidadTecnica !== "webservices" &&
-    form.modalidadTecnica !== "batch"
-  ) {
+  if (form.modalidadTecnica !== "webservices" && form.modalidadTecnica !== "batch") {
     return false;
   }
+  if (form.modalidadTecnica === "webservices") {
+    if (!form.integracionWsProtocolo.trim()) return false;
+    if (
+      form.integracionWsProtocolo === "otro" &&
+      !form.integracionWsProtocoloOtro.trim()
+    ) {
+      return false;
+    }
+    if (!form.integracionWsFormato.trim()) return false;
+    if (
+      form.integracionWsFormato === "otro" &&
+      !form.integracionWsFormatoOtro.trim()
+    ) {
+      return false;
+    }
+  }
+  if (form.modalidadTecnica === "batch") {
+    if (!form.integracionBatchCanal.trim()) return false;
+    if (
+      form.integracionBatchCanal === "otro_unidireccional" &&
+      !form.integracionBatchCanalOtro.trim()
+    ) {
+      return false;
+    }
+  }
+  if (!form.metodoPagoIntegracion) return false;
   const ventas = parseMontoUsd(form.ventasMensualesTotalUsd);
   const cantidad = parseEnteroPositivo(form.cantidadVentasMensuales);
   if (
