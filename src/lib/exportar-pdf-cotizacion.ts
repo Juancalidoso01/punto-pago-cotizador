@@ -1,10 +1,21 @@
+export type OpcionesExportarPdf = {
+  /** id del elemento HTML a rasterizar (por defecto resumen para cliente) */
+  elementId?: string;
+  /** prefijo del archivo descargado */
+  nombreArchivo?: string;
+};
+
 /**
- * Genera un PDF a partir del nodo #cotizacion-document (solo en el navegador).
+ * Genera un PDF desde un nodo del DOM (solo en el navegador).
  */
-export async function exportarCotizacionPdf(ref: string | null): Promise<void> {
-  const el = document.getElementById("cotizacion-document");
+export async function exportarCotizacionPdf(
+  ref: string | null,
+  opts: OpcionesExportarPdf = {},
+): Promise<void> {
+  const elementId = opts.elementId ?? "cotizacion-cliente-document";
+  const el = document.getElementById(elementId);
   if (!el) {
-    throw new Error("No se encontró el documento de cotización");
+    throw new Error(`No se encontró el elemento #${elementId}`);
   }
   const html2canvas = (await import("html2canvas")).default;
   const { jsPDF } = await import("jspdf");
@@ -30,5 +41,6 @@ export async function exportarCotizacionPdf(ref: string | null): Promise<void> {
     heightLeft -= pageHeight;
   }
   const safeRef = (ref ?? "borrador").replace(/[^\w.-]+/g, "_");
-  pdf.save(`PP-Cotizacion-${safeRef}.pdf`);
+  const prefijo = opts.nombreArchivo ?? "PP-ResumenCliente";
+  pdf.save(`${prefijo}-${safeRef}.pdf`);
 }

@@ -16,16 +16,16 @@ body {
   background: rgba(71, 73, 182, 0.22);
 }
 
-/* Solo el documento de cotización al imprimir */
+/* Resumen para cliente al imprimir */
 @media print {
   body * {
     visibility: hidden;
   }
-  #cotizacion-document,
-  #cotizacion-document * {
+  #cotizacion-cliente-document,
+  #cotizacion-cliente-document * {
     visibility: visible;
   }
-  #cotizacion-document {
+  #cotizacion-cliente-document {
     position: absolute;
     left: 0;
     top: 0;

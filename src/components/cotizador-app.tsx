@@ -139,10 +139,13 @@ export function CotizadorApp() {
     }
   }
 
-  async function descargarPdf() {
+  async function procesarCotizacion() {
     setPdfExportando(true);
     try {
-      await exportarCotizacionPdf(ref);
+      await exportarCotizacionPdf(ref, {
+        elementId: "cotizacion-cliente-document",
+        nombreArchivo: "PP-ResumenCliente",
+      });
     } finally {
       setPdfExportando(false);
     }
@@ -265,11 +268,11 @@ export function CotizadorApp() {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={descargarPdf}
+                  onClick={procesarCotizacion}
                   disabled={!cotizacionCompleta || pdfExportando}
                   className="inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-white/10 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {pdfExportando ? "Generando PDF…" : "Descargar PDF"}
+                  {pdfExportando ? "Generando PDF…" : "Procesar cotización"}
                 </button>
                 <button
                   type="button"
@@ -299,10 +302,10 @@ export function CotizadorApp() {
             </div>
 
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-white/80">
-              Completa todos los campos obligatorios. Luego{" "}
-              <strong>registra la cotización en Google Sheets</strong> y{" "}
-              <strong>descarga el PDF</strong> para enviarlo al correo del cliente.
-              No hay vista previa en pantalla para el cliente.
+              Completa todos los campos obligatorios. Usa{" "}
+              <strong>Procesar cotización</strong> para generar el PDF resumido
+              (set up y comisión mensual estimada) para el cliente. Opcional:{" "}
+              <strong>Registrar en Google Sheets</strong>.
             </p>
 
             {!validoMinimo && (
@@ -836,12 +839,112 @@ export function CotizadorApp() {
           </div>
 
           <p className="text-sm text-slate-500">
-            Tip: <span className="font-medium">Registrar en Sheets</span>,{" "}
-            <span className="font-medium">descargar PDF</span> e{" "}
+            Tip: <span className="font-medium">Procesar cotización</span> (PDF
+            cliente), <span className="font-medium">Sheets</span> e{" "}
             <span className="font-medium">imprimir</span> están en el encabezado
-            (habilitados cuando la cotización está completa).
+            cuando la cotización está completa.
           </p>
         </section>
+
+        <article
+          id="cotizacion-cliente-document"
+          className="fixed -left-[9999px] top-0 z-0 w-[794px] rounded-3xl border border-slate-200 bg-white p-8 shadow-sm print:static print:left-auto print:top-auto print:z-auto print:w-full print:max-w-none print:rounded-none print:border-0 print:shadow-none"
+        >
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-slate-900 p-2 text-white">
+                <img
+                  src="/brand/punto-pago-logo.svg"
+                  alt="Punto Pago"
+                  width={88}
+                  height={42}
+                  className="h-6 w-auto"
+                />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-slate-900">
+                  Resumen para el cliente
+                </p>
+                <p className="text-xs text-slate-500">
+                  Montos referenciales en USD
+                </p>
+              </div>
+            </div>
+            <div className="text-right text-sm text-slate-600">
+              <p>
+                <span className="font-medium text-slate-800">Ref.</span>{" "}
+                {ref ?? "—"}
+              </p>
+              <p>
+                <span className="font-medium text-slate-800">Fecha</span>{" "}
+                {formatFechaHoy()}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <p className="text-sm text-slate-600">
+              <span className="font-medium text-slate-900">Cliente:</span>{" "}
+              {form.empresa.trim() || "—"}
+            </p>
+          </div>
+
+          {resultadoIntegracion && resultadoComision && (
+            <>
+              <section className="mt-8">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Set up e integración (referencial)
+                </h3>
+                <p className="mt-2 text-2xl font-bold text-slate-900">
+                  {formatUsd(resultadoIntegracion.totalUsd)}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Incluye el costo de integración según la modalidad y opciones
+                  indicadas en la cotización (referencial).
+                </p>
+              </section>
+
+              <section className="mt-8">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Comisión de servicio (mensual estimada)
+                </h3>
+                <p className="mt-2 text-2xl font-bold text-brand">
+                  {formatUsd(comisionMensualRecomendada(resultadoComision))}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  Modelo de referencia:{" "}
+                  <span className="font-medium">
+                    {tituloModeloRecomendado(resultadoComision.recomendacion)}
+                  </span>
+                  . Punto Pago factura al comercio el total del período según lo
+                  acordado.
+                </p>
+              </section>
+
+              <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-800">
+                <p className="font-semibold text-slate-900">Ejemplo</p>
+                <p className="mt-2">
+                  Si tus ventas mensuales fueron de{" "}
+                  <span className="font-medium">
+                    {ventasMensualesParseado !== null
+                      ? formatUsd(ventasMensualesParseado)
+                      : "—"}
+                  </span>
+                  , la comisión mensual estimada de Punto Pago sería de{" "}
+                  <span className="font-medium">
+                    {formatUsd(comisionMensualRecomendada(resultadoComision))}
+                  </span>
+                  , con base en el volumen y el modelo visto en esta cotización.
+                </p>
+              </section>
+
+              <p className="mt-8 text-xs leading-relaxed text-slate-500">
+                Cifras referenciales. Vigencia, riesgo y condiciones finales se
+                confirman con el equipo comercial de Punto Pago.
+              </p>
+            </>
+          )}
+        </article>
 
         <article
           id="cotizacion-document"
