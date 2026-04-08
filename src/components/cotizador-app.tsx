@@ -270,7 +270,7 @@ export function CotizadorApp() {
                   type="button"
                   onClick={procesarCotizacion}
                   disabled={!cotizacionCompleta || pdfExportando}
-                  className="inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-white/10 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-white/10 hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-500 disabled:text-white disabled:ring-slate-400 disabled:hover:bg-slate-500"
                 >
                   {pdfExportando ? "Generando PDF…" : "Procesar cotización"}
                 </button>
@@ -838,11 +838,38 @@ export function CotizadorApp() {
             </div>
           </div>
 
+          <div
+            className="no-print rounded-2xl border-2 border-brand/50 bg-gradient-to-br from-brand/[0.07] to-white p-6 shadow-sm"
+            aria-label="Exportar cotización para el cliente"
+          >
+            <h3 className="text-lg font-semibold text-slate-900">
+              PDF para el cliente
+            </h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Genera el resumen en PDF (set up y comisión mensual estimada) para
+              que el vendedor lo envíe al correo del cliente.
+            </p>
+            <button
+              type="button"
+              onClick={procesarCotizacion}
+              disabled={!cotizacionCompleta || pdfExportando}
+              className="mt-4 flex w-full items-center justify-center rounded-xl bg-brand px-6 py-3.5 text-base font-semibold text-white shadow-md ring-1 ring-brand/20 transition hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:bg-slate-400 disabled:ring-slate-300 disabled:hover:bg-slate-400"
+            >
+              {pdfExportando ? "Generando PDF…" : "Procesar cotización"}
+            </button>
+            {!cotizacionCompleta && (
+              <p className="mt-3 text-sm font-medium text-amber-800">
+                Completa industria, modalidad, transaccionalidad, integración y
+                vendedor para habilitar el PDF.
+              </p>
+            )}
+          </div>
+
           <p className="text-sm text-slate-500">
-            Tip: <span className="font-medium">Procesar cotización</span> (PDF
-            cliente), <span className="font-medium">Sheets</span> e{" "}
-            <span className="font-medium">imprimir</span> están en el encabezado
-            cuando la cotización está completa.
+            Tip: también puedes usar <span className="font-medium">Procesar</span>{" "}
+            en el encabezado, <span className="font-medium">Sheets</span> e{" "}
+            <span className="font-medium">imprimir</span> cuando la cotización esté
+            completa.
           </p>
         </section>
 
