@@ -28,6 +28,85 @@ import {
 
 const DIAS_VALIDEZ_COTIZACION = 15;
 
+/** Iconos decorativos para alcance (SVG inline, legibles en PDF) */
+function IconoAppPuntoPago() {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      className="h-12 w-12 text-brand"
+      aria-hidden
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect
+        x="8"
+        y="4"
+        width="32"
+        height="40"
+        rx="6"
+        fill="#eef0ff"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="24" cy="36" r="2" fill="currentColor" />
+      <path d="M16 12h16v14H16z" fill="#c7c9f0" />
+      <path d="M18 28h12v2H18zm0-4h8v2h-8z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconoRedKioscos() {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      className="h-12 w-12 text-brand"
+      aria-hidden
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect
+        x="4"
+        y="14"
+        width="40"
+        height="26"
+        rx="3"
+        fill="#eef0ff"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect x="10" y="20" width="28" height="14" rx="1" fill="#c7c9f0" />
+      <path d="M24 8v6" stroke="currentColor" strokeWidth="2" fill="none" />
+      <rect x="20" y="4" width="8" height="6" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconoInterconexionApi() {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      className="h-12 w-12 text-brand"
+      aria-hidden
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="12" cy="24" r="6" fill="#4749B6" />
+      <circle cx="36" cy="24" r="6" fill="#6b6dcc" />
+      <circle cx="24" cy="12" r="5" fill="#9ca3d8" />
+      <path
+        d="M17 20l7-5 7 5M17 28l7 5 7-5"
+        stroke="#94a3b8"
+        strokeWidth="2"
+        fill="none"
+      />
+      <path
+        d="M18 24h12"
+        stroke="#4749B6"
+        strokeWidth="2"
+        strokeDasharray="3 2"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
 function BloqueAlcanceServicio({
   tipoServicio,
 }: {
@@ -37,23 +116,65 @@ function BloqueAlcanceServicio({
 
   if (tipoServicio === "kioscos") {
     return (
-      <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100">
+      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm ring-1 ring-slate-100">
         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Alcance del servicio
         </h3>
-        <p className="mt-2 text-sm font-medium text-slate-900">
-          Botón de recaudo (botón en kioscos)
+        <p className="mt-1 text-sm font-medium text-slate-900">
+          Botón de recaudo — canales incluidos sin costo adicional
         </p>
-        <ul className="mt-3 list-disc space-y-2.5 pl-5 text-sm leading-relaxed text-slate-700">
+        <div className="mt-4 grid grid-cols-3 gap-3 border-y border-slate-100 py-4">
+          <div className="flex flex-col items-center text-center">
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+              <IconoAppPuntoPago />
+            </div>
+            <img
+              src="/brand/punto-pago-logo.svg"
+              alt=""
+              className="mt-2 h-4 w-auto opacity-80"
+              aria-hidden
+            />
+            <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              App Punto Pago
+            </span>
+            <span className="mt-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+              Gratis
+            </span>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+              <IconoRedKioscos />
+            </div>
+            <span className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Red de kioscos
+            </span>
+            <span className="mt-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+              Gratis
+            </span>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+              <IconoInterconexionApi />
+            </div>
+            <span className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Integración API
+            </span>
+            <span className="mt-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+              Según cotización
+            </span>
+          </div>
+        </div>
+        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
           <li>
-            El <strong>botón de recaudo</strong> del comercio se muestra{" "}
-            <strong>de forma gratuita</strong> en la <strong>aplicación Punto Pago</strong>{" "}
-            para los usuarios finales.
+            El <strong>botón de recaudo</strong> se muestra <strong>sin costo adicional</strong>{" "}
+            en la <strong>app Punto Pago</strong> y en la <strong>red de kioscos</strong>; son{" "}
+            <strong>servicios complementarios</strong> para ampliar el alcance de cobro del
+            comercio.
           </li>
           <li>
-            El mismo servicio <strong>también estará disponible</strong> en la{" "}
-            <strong>red de kioscos y puntos de pago Punto Pago</strong>, según la
-            integración, modalidad y condiciones comerciales acordadas.
+            La <strong>integración técnica</strong> (web services / batch) se cotiza aparte;
+            los canales anteriores refuerzan la propuesta de valor sin cargos extra por
+            visibilidad en app y kioscos.
           </li>
         </ul>
       </section>
@@ -152,49 +273,61 @@ function BloqueVigencia({ fechaExportacion }: { fechaExportacion: Date | null })
   );
 }
 
-function TablaComparacionComision({ r }: { r: ResultadoComision }) {
+function TablaComparacionComision({
+  r,
+  compact = false,
+}: {
+  r: ResultadoComision;
+  compact?: boolean;
+}) {
+  const mt = compact ? "mt-2" : "mt-4";
+  const cell = compact ? "px-3 py-2" : "px-4 py-3";
+  const ddNum = compact ? "text-base" : "text-lg";
+  const finalBox = compact ? "px-3 py-3" : "px-4 py-4";
+  const finalAmt = compact ? "text-xl" : "text-2xl";
+
   if (r.comisionSoloPorcentaje) {
     return (
-      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-        <div className="border-b border-slate-100 bg-gradient-to-r from-brand/10 to-brand/5 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+      <div className={`${mt} overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm`}>
+        <div className={`border-b border-slate-100 bg-gradient-to-r from-brand/10 to-brand/5 ${compact ? "px-3 py-2" : "px-4 py-3"}`}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand">
             Política de comisión para este segmento
           </p>
-          <p className="mt-1 text-sm font-medium text-slate-800">
+          <p className="mt-0.5 text-sm font-medium text-slate-800">
             {formatPct(r.pct)} sobre cada venta (cash-in / botón en kioscos)
           </p>
         </div>
         <dl className="grid gap-0 sm:grid-cols-2">
-          <div className="border-b border-slate-100 px-4 py-3 sm:border-r">
-            <dt className="text-xs text-slate-500">Ticket promedio</dt>
-            <dd className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900">
+          <div className={`border-b border-slate-100 sm:border-r ${cell}`}>
+            <dt className="text-[11px] text-slate-500">Ticket promedio</dt>
+            <dd className={`mt-0.5 font-semibold tabular-nums text-slate-900 ${ddNum}`}>
               {formatUsd(r.ticketUsd)}
             </dd>
           </div>
-          <div className="border-b border-slate-100 px-4 py-3">
-            <dt className="text-xs text-slate-500">Transacciones / mes</dt>
-            <dd className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900">
+          <div className={`border-b border-slate-100 ${cell}`}>
+            <dt className="text-[11px] text-slate-500">Transacciones / mes</dt>
+            <dd className={`mt-0.5 font-semibold tabular-nums text-slate-900 ${ddNum}`}>
               {r.transaccionesMes.toLocaleString("en-US")}
             </dd>
           </div>
-          <div className="border-b border-slate-100 px-4 py-3 sm:border-r sm:border-b-0">
-            <dt className="text-xs text-slate-500">Volumen mensual estimado</dt>
-            <dd className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900">
+          <div className={`border-b border-slate-100 sm:border-r sm:border-b-0 ${cell}`}>
+            <dt className="text-[11px] text-slate-500">Volumen mensual estimado</dt>
+            <dd className={`mt-0.5 font-semibold tabular-nums text-slate-900 ${ddNum}`}>
               {formatUsd(r.volumenMensualUsd)}
             </dd>
           </div>
-          <div className="px-4 py-3">
-            <dt className="text-xs text-slate-500">Costo por transacción</dt>
-            <dd className="mt-0.5 text-lg font-semibold tabular-nums text-brand">
+          <div className={cell}>
+            <dt className="text-[11px] text-slate-500">Costo por transacción</dt>
+            <dd className={`mt-0.5 font-semibold tabular-nums text-brand ${ddNum}`}>
               {formatUsd(r.costoPorTxnPct)}
             </dd>
           </div>
         </dl>
-        <div className="border-t border-brand/20 bg-brand/[0.06] px-4 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+        <div className={`border-t border-brand/20 bg-brand/[0.06] ${finalBox}`}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand">
             Comisión mensual estimada
           </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-brand">
+          <p className={`mt-0.5 font-bold tabular-nums text-brand ${finalAmt}`}>
             {formatUsd(comisionMensualRecomendada(r))}
           </p>
         </div>
@@ -206,8 +339,8 @@ function TablaComparacionComision({ r }: { r: ResultadoComision }) {
   const ringFijo = r.recomendacion === "fijo";
 
   return (
-    <div className="mt-4 space-y-4">
-      <p className="text-sm leading-relaxed text-slate-600">
+    <div className={`${compact ? "mt-2 space-y-2" : "mt-4 space-y-4"}`}>
+      <p className={`leading-relaxed text-slate-600 ${compact ? "text-xs" : "text-sm"}`}>
         Referencia: se comparan{" "}
         <strong>
           {formatPct(Number(DEFAULT_COMISION_PORCENTAJE))} sobre cada venta
@@ -220,9 +353,11 @@ function TablaComparacionComision({ r }: { r: ResultadoComision }) {
         ticket y volumen indicados en la cotización.
       </p>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <div
-          className={`relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm ${
+          className={`relative overflow-hidden rounded-xl border bg-white shadow-sm ${
+            compact ? "p-3" : "p-4"
+          } ${
             ringPct
               ? "border-brand ring-2 ring-brand/30"
               : r.recomendacion === "empate"
@@ -263,7 +398,9 @@ function TablaComparacionComision({ r }: { r: ResultadoComision }) {
         </div>
 
         <div
-          className={`relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm ${
+          className={`relative overflow-hidden rounded-xl border bg-white shadow-sm ${
+            compact ? "p-3" : "p-4"
+          } ${
             ringFijo
               ? "border-brand ring-2 ring-brand/30"
               : r.recomendacion === "empate"
@@ -304,30 +441,34 @@ function TablaComparacionComision({ r }: { r: ResultadoComision }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-brand/20 bg-gradient-to-br from-white to-brand/[0.04] p-4 ring-1 ring-brand/10">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+      <div
+        className={`rounded-xl border border-brand/20 bg-gradient-to-br from-white to-brand/[0.04] ring-1 ring-brand/10 ${
+          compact ? "p-3" : "p-4"
+        }`}
+      >
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand">
           Resultado aplicable (referencial)
         </p>
-        <p className="mt-1 text-sm font-medium text-slate-800">
+        <p className="mt-0.5 text-xs font-medium text-slate-800">
           {tituloModeloRecomendado(r)}
         </p>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-brand/10 pt-3">
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-2 border-t border-brand/10 pt-2">
           <div>
-            <p className="text-xs text-slate-500">Costo por transacción</p>
-            <p className="text-xl font-bold tabular-nums text-slate-900">
+            <p className="text-[11px] text-slate-500">Costo por transacción</p>
+            <p className={`font-bold tabular-nums text-slate-900 ${compact ? "text-lg" : "text-xl"}`}>
               {formatUsd(costoTxnRecomendado(r))}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-slate-500">Comisión mensual estimada</p>
-            <p className="text-2xl font-bold tabular-nums text-brand">
+            <p className="text-[11px] text-slate-500">Comisión mensual estimada</p>
+            <p className={`font-bold tabular-nums text-brand ${compact ? "text-xl" : "text-2xl"}`}>
               {formatUsd(comisionMensualRecomendada(r))}
             </p>
           </div>
         </div>
       </div>
 
-      <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
+      <p className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-600">
         {textoExplicativoComision(r)}
       </p>
     </div>
@@ -369,17 +510,21 @@ export function CotizacionPdfClienteDocument({
         <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <img
-              src="/brand/puntopago-logo.png"
+              src="/brand/punto-pago-logo.svg"
               alt="Punto Pago"
-              width={320}
-              height={62}
-              className="h-10 w-auto max-w-[280px] object-contain object-left brightness-0 invert"
+              width={220}
+              height={118}
+              className="h-10 w-auto max-w-[260px] object-contain object-left"
+              style={{
+                filter:
+                  "brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,0.45))",
+              }}
             />
             <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-[1.65rem]">
               Cotización comercial
             </h1>
             <p className="mt-2 max-w-md text-sm leading-relaxed text-white/85">
-              Resumen referencial en USD para el prospecto. Montos orientativos; la
+              Resumen referencial en USD para el cliente. Montos orientativos; la
               propuesta definitiva se formaliza con el equipo comercial.
             </p>
           </div>
@@ -409,7 +554,7 @@ export function CotizacionPdfClienteDocument({
       <div className="relative z-20 -mt-10 px-8 pb-10 print:px-6 print:pb-8">
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/[0.06] ring-1 ring-slate-200/60 print:shadow-none">
           <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Datos del prospecto
+            Datos del cliente
           </h2>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -440,32 +585,36 @@ export function CotizacionPdfClienteDocument({
         {form.tipoServicioPuntoPago === "kioscos" &&
           resultadoIntegracion &&
           resultadoComision && (
-            <div className="mt-6 space-y-6">
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Set up e integración
-                </h3>
-                <p className="mt-3 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
-                  {formatUsd(resultadoIntegracion.totalUsd)}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  Incluye el costo de integración según la modalidad y opciones indicadas
-                  en la cotización (referencial).
-                </p>
+            <div className="mt-5 space-y-4">
+              <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100">
+                <div className="border-b border-slate-100 p-4 sm:p-5">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Set up e integración
+                  </h3>
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
+                    {formatUsd(resultadoIntegracion.totalUsd)}
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                    Incluye el costo de integración según la modalidad y opciones
+                    indicadas en la cotización (referencial).
+                  </p>
+                </div>
+                <div
+                  id="pdf-bloque-comision"
+                  className="pdf-bloque-comision p-4 sm:p-5"
+                >
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Comisión de servicio (referencial)
+                  </h3>
+                  <p className="mt-1.5 text-xs text-slate-600">
+                    Estimación con base en el volumen y el ticket indicados en el
+                    cotizador.
+                  </p>
+                  <TablaComparacionComision r={resultadoComision} compact />
+                </div>
               </section>
 
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Comisión de servicio (referencial)
-                </h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  Estimación con base en el volumen y el ticket indicados en el
-                  cotizador.
-                </p>
-                <TablaComparacionComision r={resultadoComision} />
-              </section>
-
-              <section className="rounded-2xl border border-slate-200 bg-slate-50/90 p-5 text-sm leading-relaxed text-slate-800">
+              <section className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 text-sm leading-relaxed text-slate-800">
                 <p className="font-semibold text-slate-900">Ejemplo ilustrativo</p>
                 <p className="mt-2">
                   Si las ventas mensuales fueran de{" "}

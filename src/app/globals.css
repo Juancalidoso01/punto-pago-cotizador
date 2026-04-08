@@ -35,6 +35,10 @@ body {
     background: #eef0f8;
     box-shadow: none;
   }
+  #cotizacion-cliente-document .pdf-bloque-comision {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
   .no-print {
     display: none !important;
   }
