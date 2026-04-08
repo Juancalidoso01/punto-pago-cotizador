@@ -23,8 +23,6 @@ export type CotizacionForm = {
   industriaId: string;
   /** Notas técnicas u operativas adicionales (opcional) */
   tecnologiaDetalle: string;
-  /** Activar recaudo / recarga en red de kioscos Punto Pago (suma recargo USD) */
-  incluyeRecaudoKioscos: boolean;
   /** Web services vs batch (set up fee según política; ver integracion.ts) */
   modalidadTecnica: "webservices" | "batch" | "";
   /** Web services: protocolo / canal entre sistemas (id de OPCIONES_WS_PROTOCOLO) */
@@ -92,7 +90,6 @@ export function createEmptyForm(): CotizacionForm {
     estimadoNoBancarizados: "",
     industriaId: "",
     tecnologiaDetalle: "",
-    incluyeRecaudoKioscos: false,
     modalidadTecnica: "",
     integracionWsProtocolo: "",
     integracionWsProtocoloOtro: "",

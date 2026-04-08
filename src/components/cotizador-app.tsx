@@ -29,7 +29,6 @@ import {
   OPCIONES_BATCH_CANAL,
   OPCIONES_WS_FORMATO,
   OPCIONES_WS_PROTOCOLO,
-  RECARGO_RECAUDO_KIOSCOS_USD,
   SETUP_FEE_BATCH_USD,
   SETUP_FEE_WEBSERVICES_BANCO_USD,
   SETUP_FEE_WEBSERVICES_USD,
@@ -240,16 +239,11 @@ export function CotizadorApp() {
       form.tipoServicioPuntoPago === "kioscos" && form.industriaId
         ? calcularPrecioIntegracion({
             industriaId: form.industriaId,
-            incluyeRecaudoKioscos: form.incluyeRecaudoKioscos,
+            incluyeRecaudoKioscos: false,
             modalidadTecnica: form.modalidadTecnica,
           })
         : null,
-    [
-      form.tipoServicioPuntoPago,
-      form.industriaId,
-      form.incluyeRecaudoKioscos,
-      form.modalidadTecnica,
-    ],
+    [form.tipoServicioPuntoPago, form.industriaId, form.modalidadTecnica],
   );
 
   const industriaLabel = useMemo(
@@ -1042,33 +1036,6 @@ export function CotizadorApp() {
                   placeholder="Detalle técnico, URLs, versión de ERP, etc."
                 />
               </label>
-
-              <div className="sm:col-span-2">
-                <span className="mb-2 block text-sm font-medium text-slate-700">
-                  Tipo de servicio
-                </span>
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4 ring-brand/20 hover:bg-slate-50">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand"
-                    checked={form.incluyeRecaudoKioscos}
-                    onChange={(e) =>
-                      setField("incluyeRecaudoKioscos", e.target.checked)
-                    }
-                  />
-                  <span>
-                    <span className="font-medium text-slate-900">
-                      Recaudo en red de kioscos Punto Pago
-                    </span>
-                    <span className="mt-1 block text-sm text-slate-600">
-                      Incluye activación para recaudo / recarga en la red de
-                      kioscos. Recargo referencial:{" "}
-                      {formatUsd(RECARGO_RECAUDO_KIOSCOS_USD)} (se suma al set up
-                      fee).
-                    </span>
-                  </span>
-                </label>
-              </div>
             </div>
 
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
@@ -1089,16 +1056,6 @@ export function CotizadorApp() {
                       {formatUsd(resultadoIntegracion.precioBaseUsd)}
                     </dd>
                   </div>
-                  {resultadoIntegracion.incluyeRecaudoKioscos && (
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-slate-600">
-                        Recaudo red de kioscos
-                      </dt>
-                      <dd className="font-semibold text-slate-900">
-                        {formatUsd(resultadoIntegracion.recargoKioscosUsd)}
-                      </dd>
-                    </div>
-                  )}
                   <div className="flex justify-between gap-4 border-t border-slate-200 pt-2">
                     <dt className="font-medium text-slate-800">
                       Total estimado integración
@@ -1319,14 +1276,6 @@ export function CotizadorApp() {
                       </dd>
                     </div>
                   ) : null}
-                  <div>
-                    <dt className="text-slate-500">Recaudo en red de kioscos</dt>
-                    <dd className="font-medium text-slate-900">
-                      {resultadoIntegracion.incluyeRecaudoKioscos
-                        ? `Sí (+ ${formatUsd(RECARGO_RECAUDO_KIOSCOS_USD)})`
-                        : "No"}
-                    </dd>
-                  </div>
                 </dl>
                 <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 text-sm">
                   <table className="w-full border-collapse text-left">
@@ -1339,16 +1288,6 @@ export function CotizadorApp() {
                           {formatUsd(resultadoIntegracion.precioBaseUsd)}
                         </td>
                       </tr>
-                      {resultadoIntegracion.incluyeRecaudoKioscos && (
-                        <tr className="border-b border-slate-100">
-                          <td className="px-3 py-2 text-slate-700">
-                            Recaudo red de kioscos
-                          </td>
-                          <td className="px-3 py-2 text-right font-medium text-slate-900">
-                            {formatUsd(resultadoIntegracion.recargoKioscosUsd)}
-                          </td>
-                        </tr>
-                      )}
                       <tr className="bg-slate-50">
                         <td className="px-3 py-2 font-semibold text-slate-900">
                           Total integración (est.)
@@ -1464,7 +1403,7 @@ export function CotizadorApp() {
             const notasIntegracion = form.tecnologiaDetalle.trim()
               ? `\n- Notas integración: ${form.tecnologiaDetalle.trim()}`
               : "";
-            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Recaudo red kioscos: ${form.incluyeRecaudoKioscos ? `Sí (+${formatUsd(RECARGO_RECAUDO_KIOSCOS_USD)})` : "No"}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
+            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
             const bloqueComision = resultadoComision
               ? resultadoComision.comisionSoloPorcentaje
                 ? `\n\nComisión (referencial — política 5% segmento):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- ${textoExplicativoComision(resultadoComision)}`

@@ -54,7 +54,7 @@ export function buildCotizacionPayload(
       integracionBatchCanalOtro: form.integracionBatchCanalOtro,
       metodoPagoIntegracion: form.metodoPagoIntegracion,
       tecnologiaDetalle: form.tecnologiaDetalle,
-      recaudoKioscos: form.incluyeRecaudoKioscos,
+      recaudoKioscos: false,
       setupFeeUsd: resultadoIntegracion.precioBaseUsd,
       totalIntegracionUsd: resultadoIntegracion.totalUsd,
       ventasMensualesUsd: parseMontoUsd(form.ventasMensualesTotalUsd) ?? 0,
