@@ -1129,7 +1129,7 @@ export function CotizadorApp() {
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-slate-900 p-2 text-white">
                     <img
-                      src="/brand/punto-pago-logo.svg"
+                      src="/brand/punto-pago-logo-white.svg"
                       alt="Punto Pago"
                       width={92}
                       height={44}
@@ -1171,18 +1171,26 @@ export function CotizadorApp() {
                   Alcance del servicio
                 </h3>
                 <p className="mt-2 text-sm font-medium text-slate-900">
-                  Botón de recaudo (botón en kioscos)
+                  Tres alcances incluidos al integrarse con Punto Pago (misma cotización)
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                  La <strong>integración técnica</strong> es la que se cotiza en este documento.
+                  Punto Pago cobra el <strong>fee de implementación (set up)</strong> y el{" "}
+                  <strong>fee mensual</strong> (comisión sobre operaciones); al contratar la
+                  integración y pagar el set up, los tres alcances siguientes se habilitan{" "}
+                  <strong>sin cargo adicional</strong> por canal.
                 </p>
                 <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
                   <li>
-                    El <strong>botón de recaudo</strong> del comercio se muestra{" "}
-                    <strong>de forma gratuita</strong> en la{" "}
-                    <strong>aplicación Punto Pago</strong> para los usuarios finales.
+                    <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: el{" "}
+                    <strong>botón de recaudo</strong> sin cargo extra por visibilidad en esos
+                    canales; forma parte del mismo esquema de integración cotizado aquí.
                   </li>
                   <li>
-                    El mismo servicio <strong>también estará disponible</strong> en la{" "}
-                    <strong>red de kioscos y puntos de pago Punto Pago</strong>, según la
-                    integración, modalidad y condiciones comerciales acordadas.
+                    <strong>Bancos y billeteras digitales:</strong> convenios Punto Pago; los
+                    usuarios pueden pagar desde <strong>banca en línea o apps</strong>; el comercio
+                    puede <strong>incrementar la transaccionalidad</strong> reutilizando esas
+                    integraciones.
                   </li>
                 </ul>
               </section>
@@ -1392,7 +1400,7 @@ export function CotizadorApp() {
                 : "Vigencia: 15 días naturales desde la exportación del PDF (fecha al generar el documento).";
             const bloqueAlcance =
               form.tipoServicioPuntoPago === "kioscos"
-                ? `\nAlcance del servicio (botón de recaudo):\n- El botón de recaudo se muestra de forma gratuita en la aplicación Punto Pago para los usuarios finales.\n- El mismo servicio también estará disponible en la red de kioscos y puntos de pago Punto Pago, según la integración y condiciones acordadas.\n`
+                ? `\nAlcance del servicio (integración cotizada en este documento):\n- Cobro Punto Pago: fee de implementación (set up) y fee mensual (comisión). Los tres alcances se incluyen sin cargo adicional por canal al pagar el set up.\n- App y red de kioscos: botón de recaudo sin cargo extra por visibilidad en esos canales.\n- Bancos y billeteras: convenios; pago desde banca en línea o apps; mayor transaccionalidad.\n`
                 : form.tipoServicioPuntoPago === "hub_pagos"
                   ? `\nAlcance del servicio: Hub de pagos — concentración y procesamiento de pagos; detalle operativo con el equipo comercial.\n`
                   : form.tipoServicioPuntoPago === "cash_out"

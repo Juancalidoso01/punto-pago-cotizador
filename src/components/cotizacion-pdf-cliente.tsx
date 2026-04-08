@@ -33,7 +33,7 @@ function IconoAppPuntoPago() {
   return (
     <svg
       viewBox="0 0 48 48"
-      className="h-12 w-12 text-brand"
+      className="h-14 w-14 shrink-0 text-brand"
       aria-hidden
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -58,7 +58,7 @@ function IconoRedKioscos() {
   return (
     <svg
       viewBox="0 0 48 48"
-      className="h-12 w-12 text-brand"
+      className="h-14 w-14 shrink-0 text-brand"
       aria-hidden
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -83,7 +83,7 @@ function IconoInterconexionApi() {
   return (
     <svg
       viewBox="0 0 48 48"
-      className="h-12 w-12 text-brand"
+      className="h-14 w-14 shrink-0 text-brand"
       aria-hidden
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -121,60 +121,60 @@ function BloqueAlcanceServicio({
           Alcance del servicio
         </h3>
         <p className="mt-1 text-sm font-medium text-slate-900">
-          Botón de recaudo — canales incluidos sin costo adicional
+          Tres alcances incluidos al integrarse con Punto Pago (misma cotización)
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+          La <strong>integración técnica</strong> (web services / batch) es la que se describe y cotiza
+          en este documento. Punto Pago cobra el{" "}
+          <strong>fee de implementación (set up)</strong> y el{" "}
+          <strong>fee mensual</strong> (comisión sobre operaciones); al contratar la integración y
+          pagar el set up, los tres alcances siguientes se habilitan{" "}
+          <strong>sin cargo adicional</strong> por canal.
         </p>
         <div className="mt-4 grid grid-cols-3 gap-3 border-y border-slate-100 py-4">
-          <div className="flex flex-col items-center text-center">
-            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+          <div
+            className="flex flex-col items-center justify-center"
+            aria-label="App Punto Pago"
+          >
+            <div className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
               <IconoAppPuntoPago />
+              <img
+                src="/brand/punto-pago-logo.svg"
+                alt=""
+                className="h-5 w-auto max-w-[100px] opacity-90"
+                aria-hidden
+              />
             </div>
-            <img
-              src="/brand/punto-pago-logo.svg"
-              alt=""
-              className="mt-2 h-4 w-auto opacity-80"
-              aria-hidden
-            />
-            <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-              App Punto Pago
-            </span>
-            <span className="mt-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-              Gratis
-            </span>
           </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+          <div
+            className="flex flex-col items-center justify-center"
+            aria-label="Red de kioscos"
+          >
+            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
               <IconoRedKioscos />
             </div>
-            <span className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-              Red de kioscos
-            </span>
-            <span className="mt-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-              Gratis
-            </span>
           </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+          <div
+            className="flex flex-col items-center justify-center"
+            aria-label="Ecosistema bancos y billeteras"
+          >
+            <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
               <IconoInterconexionApi />
             </div>
-            <span className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-              Integración API
-            </span>
-            <span className="mt-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-              Según cotización
-            </span>
           </div>
         </div>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
           <li>
-            El <strong>botón de recaudo</strong> se muestra <strong>sin costo adicional</strong>{" "}
-            en la <strong>app Punto Pago</strong> y en la <strong>red de kioscos</strong>; son{" "}
-            <strong>servicios complementarios</strong> para ampliar el alcance de cobro del
-            comercio.
+            <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: el{" "}
+            <strong>botón de recaudo</strong> se muestra <strong>sin cargo extra</strong> por
+            visibilidad en esos canales; amplían el alcance de cobro del comercio como parte del
+            mismo esquema de integración cotizado aquí.
           </li>
           <li>
-            La <strong>integración técnica</strong> (web services / batch) se cotiza aparte;
-            los canales anteriores refuerzan la propuesta de valor sin cargos extra por
-            visibilidad en app y kioscos.
+            <strong>Bancos y billeteras digitales:</strong> Punto Pago mantiene convenios con
+            entidades donde los usuarios ya pueden pagar desde <strong>banca en línea o
+            apps</strong>. Al integrarse, el comercio se conecta a ese ecosistema y puede{" "}
+            <strong>incrementar la transaccionalidad</strong> reutilizando esas integraciones.
           </li>
         </ul>
       </section>
@@ -510,15 +510,11 @@ export function CotizacionPdfClienteDocument({
         <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <img
-              src="/brand/punto-pago-logo.svg"
+              src="/brand/punto-pago-logo-white.svg"
               alt="Punto Pago"
               width={220}
               height={118}
-              className="h-10 w-auto max-w-[260px] object-contain object-left"
-              style={{
-                filter:
-                  "brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,0.45))",
-              }}
+              className="h-10 w-auto max-w-[260px] object-contain object-left drop-shadow-[0_0_12px_rgba(255,255,255,0.35)]"
             />
             <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-[1.65rem]">
               Cotización comercial
