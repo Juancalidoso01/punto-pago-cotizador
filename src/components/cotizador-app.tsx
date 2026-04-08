@@ -1,18 +1,27 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- logos SVG y hero: evitar 500 del optimizador (SVG / sharp) en algunos entornos */
-import { useEffect, useMemo, useState } from "react";
 import {
-  calcularComisiones,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+} from "react";
+import { flushSync } from "react-dom";
+import {
+  calcularComisionesConPolitica,
   comisionMensualRecomendada,
   costoTxnRecomendado,
   formatPct,
   formatUsd,
+  formatearEnteroParaCampo,
+  formatearMontoUsdParaCampo,
   parseEnteroPositivo,
   parseMontoUsd,
-  type ResultadoComision,
 } from "@/lib/comision";
 import {
+  buscarIndustria,
   calcularPrecioIntegracion,
   industriasEnGrupos,
   RECARGO_RECAUDO_KIOSCOS_USD,
@@ -27,7 +36,16 @@ import {
 } from "@/lib/cotizacion-types";
 import { buildCotizacionPayload } from "@/lib/cotizacion-payload";
 import { esCotizacionCompleta } from "@/lib/cotizacion-validacion";
-import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
+import {
+  textoExplicativoComision,
+  tituloModeloRecomendado,
+} from "@/lib/cotizacion-texto";
+import { CotizacionPdfClienteDocument } from "@/components/cotizacion-pdf-cliente";
+import {
+  fechaMasDias,
+  formatFechaHoraEmision,
+  formatSoloFechaLarga,
+} from "@/lib/fecha-cotizacion";
 import { exportarCotizacionPdf } from "@/lib/exportar-pdf-cotizacion";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
@@ -35,32 +53,12 @@ import {
   TIPOS_SERVICIO_PUNTO_PAGO,
 } from "@/lib/tipo-servicio-punto-pago";
 
-/** Canales habituales en Panamá para el modelo de cobro del comercio */
-const MODELOS_PAGO_PANAMA = [
-  "Yappy",
-  "ACH",
-  "Procesamiento bancario de tarjetas",
-  "Efectivo en punto / red de cobro",
-  "Mixto (varios canales)",
-  "Otro (detallar en notas)",
-] as const;
-
 function formatFechaHoy(): string {
   return new Intl.DateTimeFormat("es-MX", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   }).format(new Date());
-}
-
-function textoRecomendacion(r: ResultadoComision["recomendacion"]): string {
-  if (r === "pct") {
-    return "Con el ticket y volumen indicados, conviene el modelo por porcentaje (3% sobre cada venta): menor costo por operación frente al cargo fijo de referencia.";
-  }
-  if (r === "fijo") {
-    return "Con el ticket y volumen indicados, conviene el monto fijo por transacción (1,25 USD): menor costo por operación; el cargo fijo pesa menos sobre el recaudo cuando el ticket es alto.";
-  }
-  return "Con los datos indicados, ambos modelos (3% sobre cada venta y 1,25 USD por transacción) arrojan el mismo costo por operación; el comercio puede elegir según preferencia de facturación.";
 }
 
 function generarRefCotizacion(): string {
@@ -83,6 +81,10 @@ export function CotizadorApp() {
   );
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [pdfExportando, setPdfExportando] = useState(false);
+  /** Fecha/hora de la última exportación PDF (vigencia 15 días desde aquí) */
+  const [fechaExportacionPdf, setFechaExportacionPdf] = useState<Date | null>(
+    null,
+  );
 
   useEffect(() => {
     setRef(generarRefCotizacion());
@@ -94,6 +96,35 @@ export function CotizadorApp() {
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
+
+  const onBlurFormatearMontoUsd = useCallback(
+    (campo: "ventasMensualesTotalUsd" | "volumenCashOutMensualUsd") => {
+      setForm((prev) => {
+        const raw = prev[campo].trim();
+        if (raw === "") return prev;
+        const n = parseMontoUsd(raw);
+        if (n === null) return prev;
+        const formatted = formatearMontoUsdParaCampo(n);
+        if (prev[campo] === formatted) return prev;
+        return { ...prev, [campo]: formatted };
+      });
+    },
+    [],
+  );
+
+  const onChangeCantidadVentas = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const digits = e.target.value.replace(/\D/g, "");
+      if (digits === "") {
+        setField("cantidadVentasMensuales", "");
+        return;
+      }
+      const n = parseInt(digits, 10);
+      if (!Number.isFinite(n)) return;
+      setField("cantidadVentasMensuales", formatearEnteroParaCampo(n));
+    },
+    [],
+  );
 
   function imprimir() {
     window.print();
@@ -148,6 +179,9 @@ export function CotizadorApp() {
   async function procesarCotizacion() {
     setPdfExportando(true);
     try {
+      flushSync(() => {
+        setFechaExportacionPdf(new Date());
+      });
       await exportarCotizacionPdf(ref, {
         elementId: "cotizacion-cliente-document",
         nombreArchivo: "PP-ResumenCliente",
@@ -199,31 +233,34 @@ export function CotizadorApp() {
     ],
   );
 
+  const industriaLabel = useMemo(
+    () => buscarIndustria(form.industriaId)?.label ?? "",
+    [form.industriaId],
+  );
+
   const resultadoComision = useMemo(() => {
     if (form.tipoServicioPuntoPago !== "kioscos") return null;
     const ventas = parseMontoUsd(form.ventasMensualesTotalUsd);
     const cantidad = parseEnteroPositivo(form.cantidadVentasMensuales);
-    const pct = parseMontoUsd(DEFAULT_COMISION_PORCENTAJE);
-    const fijo = parseMontoUsd(DEFAULT_COMISION_FIJA_USD);
     if (
       ventas === null ||
       cantidad === null ||
       ventas <= 0 ||
-      cantidad <= 0 ||
-      pct === null ||
-      fijo === null
+      cantidad <= 0
     ) {
       return null;
     }
     const ticket = ventas / cantidad;
-    return calcularComisiones({
+    const ind = buscarIndustria(form.industriaId);
+    const politica = ind?.comisionCashIn ?? "comparar_3_vs_125";
+    return calcularComisionesConPolitica({
       ticketUsd: ticket,
       transaccionesMes: cantidad,
-      comisionPct: pct,
-      comisionFijaUsd: fijo,
+      politica,
     });
   }, [
     form.tipoServicioPuntoPago,
+    form.industriaId,
     form.ventasMensualesTotalUsd,
     form.cantidadVentasMensuales,
   ]);
@@ -239,6 +276,13 @@ export function CotizadorApp() {
     () => esCotizacionCompleta(form, resultadoIntegracion, resultadoComision),
     [form, resultadoIntegracion, resultadoComision],
   );
+
+  const servicioLabel =
+    TIPOS_SERVICIO_PUNTO_PAGO.find((t) => t.id === form.tipoServicioPuntoPago)
+      ?.label ?? "—";
+
+  const volumenCashOutUsd =
+    parseMontoUsd(form.volumenCashOutMensualUsd) ?? 0;
 
   const inputClass =
     "w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 shadow-sm outline-none ring-brand/20 focus:border-brand focus:ring-2";
@@ -355,52 +399,56 @@ export function CotizadorApp() {
           className="no-print space-y-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
           aria-label="Datos de la cotización"
         >
-          {form.tipoServicioPuntoPago === "kioscos" && (
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                1. Industria del prospecto
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Sectores frecuentes en Panamá con volumen masivo de clientes (banca,
-                telecomunicaciones, procesadores de pagos, remesas, transporte,
-                aerolíneas, retail, etc.). El set up fee se define más abajo según
-                modalidad técnica.
-              </p>
-              <label className="mt-4 block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
-                  ¿A qué industria corresponde el cliente?
-                </span>
-                <select
-                  className={`${inputClass} bg-white`}
-                  value={form.industriaId}
-                  onChange={(e) => setField("industriaId", e.target.value)}
-                >
-                  <option value="">Seleccionar industria…</option>
-                  {industriasEnGrupos().map(({ grupo, items }) => (
-                    <optgroup key={grupo} label={grupo}>
-                      {items.map((i) => (
-                        <option key={i.id} value={i.id}>
-                          {i.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
-
-          <div
-            className={
-              form.tipoServicioPuntoPago === "kioscos"
-                ? "border-t border-slate-100 pt-6"
-                : ""
-            }
-          >
+          <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              {form.tipoServicioPuntoPago === "kioscos"
-                ? "2. Datos del prospecto"
-                : "1. Datos del prospecto"}
+              1. Industria del prospecto
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Sectores frecuentes en Panamá con volumen masivo de clientes (banca,
+              telecomunicaciones, procesadores de pagos, remesas, transporte,
+              aerolíneas, retail, etc.). Clasifica al prospecto en todas las líneas
+              de servicio. En <strong>botón en kioscos</strong>, el set up fee se
+              define más abajo según la modalidad técnica.
+            </p>
+            <p className="mt-2 text-xs text-slate-500">
+              Incluye segmentos como{" "}
+              <span className="font-medium text-slate-600">
+                financiera tradicional / financiera para no bancarizados
+              </span>
+              , <span className="font-medium text-slate-600">remesas internacionales</span>{" "}
+              y{" "}
+              <span className="font-medium text-slate-600">
+                casa de apuestas (rubro deportivo)
+              </span>{" "}
+              (agrupados en el menú por rubro).
+            </p>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-sm font-medium text-slate-700">
+                ¿A qué industria corresponde el cliente?{" "}
+                <span className="text-red-600">*</span>
+              </span>
+              <select
+                className={`${inputClass} bg-white`}
+                value={form.industriaId}
+                onChange={(e) => setField("industriaId", e.target.value)}
+              >
+                <option value="">Seleccionar industria…</option>
+                {industriasEnGrupos().map(({ grupo, items }) => (
+                  <optgroup key={grupo} label={grupo}>
+                    {items.map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="border-t border-slate-100 pt-6">
+            <h2 className="text-lg font-semibold text-slate-900">
+              2. Datos del prospecto
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               Información de contacto del cliente.
@@ -450,9 +498,7 @@ export function CotizadorApp() {
 
           <div className="border-t border-slate-100 pt-6">
             <h2 className="text-lg font-semibold text-slate-900">
-              {form.tipoServicioPuntoPago === "kioscos"
-                ? "3. Tipo de servicio o programa Punto Pago"
-                : "2. Tipo de servicio o programa Punto Pago"}
+              3. Tipo de servicio o programa Punto Pago
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               Define qué producto se cotiza: botón en kioscos (flujo completo) u otras
@@ -524,11 +570,15 @@ export function CotizadorApp() {
                     Volumen mensual estimado de desembolsos (USD)
                   </span>
                   <input
-                    className={inputClass}
+                    className={`${inputClass} text-right tabular-nums`}
                     inputMode="decimal"
+                    autoComplete="off"
                     value={form.volumenCashOutMensualUsd}
                     onChange={(e) =>
                       setField("volumenCashOutMensualUsd", e.target.value)
+                    }
+                    onBlur={() =>
+                      onBlurFormatearMontoUsd("volumenCashOutMensualUsd")
                     }
                     placeholder="Ej. 80,000"
                   />
@@ -567,8 +617,7 @@ export function CotizadorApp() {
                   4. Transaccionalidad (USD)
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Monto y volumen de ventas al mes; canales típicos en Panamá. Los
-                  montos en dólares estadounidenses (USD).
+                  Monto y volumen de ventas al mes (referencial). Moneda: USD.
                 </p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -582,12 +631,14 @@ export function CotizadorApp() {
                   Monto total mensual de ventas
                 </span>
                 <input
-                  className={inputClass}
+                  className={`${inputClass} text-right tabular-nums`}
                   inputMode="decimal"
+                  autoComplete="off"
                   value={form.ventasMensualesTotalUsd}
                   onChange={(e) =>
                     setField("ventasMensualesTotalUsd", e.target.value)
                   }
+                  onBlur={() => onBlurFormatearMontoUsd("ventasMensualesTotalUsd")}
                   placeholder="Ej. 125,000"
                 />
                 <span className="mt-1 block text-xs text-slate-500">
@@ -600,54 +651,16 @@ export function CotizadorApp() {
                   Cantidad total de ventas al mes
                 </span>
                 <input
-                  className={inputClass}
+                  className={`${inputClass} text-right tabular-nums`}
                   inputMode="numeric"
+                  autoComplete="off"
                   value={form.cantidadVentasMensuales}
-                  onChange={(e) =>
-                    setField("cantidadVentasMensuales", e.target.value)
-                  }
+                  onChange={onChangeCantidadVentas}
                   placeholder="Ej. 2,500"
                 />
                 <span className="mt-1 block text-xs text-slate-500">
                   Número de operaciones o tickets en el mes. Con el monto total se
                   calcula el ticket promedio para las comisiones.
-                </span>
-              </label>
-
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
-                  Canal o modelo de cobro predominante
-                </span>
-                <select
-                  className={`${inputClass} bg-white`}
-                  value={form.canal}
-                  onChange={(e) => setField("canal", e.target.value)}
-                >
-                  <option value="">Seleccionar…</option>
-                  {MODELOS_PAGO_PANAMA.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
-                  Clientes no bancarizados (efectivo en red)
-                </span>
-                <textarea
-                  rows={3}
-                  className={inputClass}
-                  value={form.estimadoNoBancarizados}
-                  onChange={(e) =>
-                    setField("estimadoNoBancarizados", e.target.value)
-                  }
-                  placeholder="Ej. ~25% del público; o perfiles que solo usan efectivo y pueden acudir a un punto de pago…"
-                />
-                <span className="mt-1 block text-xs text-slate-500">
-                  A Punto Pago le interesa dimensionar cuántas personas podrían pagar
-                  en efectivo en la red (no bancarizadas o que eligen efectivo).
                 </span>
               </label>
             </div>
@@ -658,12 +671,23 @@ export function CotizadorApp() {
               5. Comisión recomendada (referencial)
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Se comparan automáticamente las tarifas de referencia:{" "}
-              <strong>{DEFAULT_COMISION_PORCENTAJE}%</strong> sobre cada venta y{" "}
-              <strong>{DEFAULT_COMISION_FIJA_USD} USD</strong> por transacción, usando
-              el ticket y volumen de la sección 4. Se muestra solo el modelo que
-              conviene según esos datos. Punto Pago factura al comercio el total del
-              período según el modelo acordado.
+              {buscarIndustria(form.industriaId)?.comisionCashIn === "solo_5" ? (
+                <>
+                  Para este <strong>segmento</strong> aplica la política referencial
+                  de <strong>5%</strong> sobre cada venta (cash-in / botón en
+                  kioscos), sin comparar con el modelo fijo por transacción. Punto
+                  Pago factura al comercio según lo acordado.
+                </>
+              ) : (
+                <>
+                  Se comparan las tarifas de referencia:{" "}
+                  <strong>{DEFAULT_COMISION_PORCENTAJE}%</strong> sobre cada venta y{" "}
+                  <strong>{DEFAULT_COMISION_FIJA_USD} USD</strong> por transacción,
+                  usando el ticket y volumen de la sección 4. Se muestra el modelo
+                  que conviene según esos datos. Punto Pago factura al comercio el
+                  total del período según lo acordado.
+                </>
+              )}
             </p>
 
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
@@ -682,7 +706,7 @@ export function CotizadorApp() {
                       Modelo recomendado
                     </p>
                     <p className="mt-1 text-base font-semibold text-slate-900">
-                      {tituloModeloRecomendado(resultadoComision.recomendacion)}
+                      {tituloModeloRecomendado(resultadoComision)}
                     </p>
                     <dl className="mt-3 grid gap-2 sm:grid-cols-2">
                       <div>
@@ -702,7 +726,7 @@ export function CotizadorApp() {
                     </dl>
                   </div>
                   <p className="rounded-lg bg-slate-100/90 p-3 text-slate-700">
-                    {textoRecomendacion(resultadoComision.recomendacion)}
+                    {textoExplicativoComision(resultadoComision)}
                   </p>
                   <p className="text-xs text-slate-500">
                     Volumen mensual estimado (monto total de ventas):{" "}
@@ -942,175 +966,19 @@ export function CotizadorApp() {
           </p>
         </section>
 
-        <article
-          id="cotizacion-cliente-document"
-          className="fixed -left-[9999px] top-0 z-0 w-[794px] rounded-3xl border border-slate-200 bg-white p-8 shadow-sm print:static print:left-auto print:top-auto print:z-auto print:w-full print:max-w-none print:rounded-none print:border-0 print:shadow-none"
-        >
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-slate-900 p-2 text-white">
-                <img
-                  src="/brand/punto-pago-logo.svg"
-                  alt="Punto Pago"
-                  width={88}
-                  height={42}
-                  className="h-6 w-auto"
-                />
-              </div>
-              <div>
-                <p className="text-base font-semibold text-slate-900">
-                  Resumen para el cliente
-                </p>
-                <p className="text-xs text-slate-500">
-                  Montos referenciales en USD
-                </p>
-              </div>
-            </div>
-            <div className="text-right text-sm text-slate-600">
-              <p>
-                <span className="font-medium text-slate-800">Ref.</span>{" "}
-                {ref ?? "—"}
-              </p>
-              <p>
-                <span className="font-medium text-slate-800">Fecha</span>{" "}
-                {formatFechaHoy()}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-1">
-            <p className="text-sm text-slate-600">
-              <span className="font-medium text-slate-900">Cliente:</span>{" "}
-              {form.empresa.trim() || "—"}
-            </p>
-            <p className="text-sm text-slate-600">
-              <span className="font-medium text-slate-900">Servicio:</span>{" "}
-              {TIPOS_SERVICIO_PUNTO_PAGO.find((t) => t.id === form.tipoServicioPuntoPago)
-                ?.label ?? "—"}
-            </p>
-          </div>
-
-          {form.tipoServicioPuntoPago === "kioscos" &&
-            resultadoIntegracion &&
-            resultadoComision && (
-              <>
-                <section className="mt-8">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Set up e integración (referencial)
-                  </h3>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {formatUsd(resultadoIntegracion.totalUsd)}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Incluye el costo de integración según la modalidad y opciones
-                    indicadas en la cotización (referencial).
-                  </p>
-                </section>
-
-                <section className="mt-8">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Comisión de servicio (mensual estimada)
-                  </h3>
-                  <p className="mt-2 text-2xl font-bold text-brand">
-                    {formatUsd(comisionMensualRecomendada(resultadoComision))}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-700">
-                    Modelo de referencia:{" "}
-                    <span className="font-medium">
-                      {tituloModeloRecomendado(resultadoComision.recomendacion)}
-                    </span>
-                    . Punto Pago factura al comercio el total del período según lo
-                    acordado.
-                  </p>
-                </section>
-
-                <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-800">
-                  <p className="font-semibold text-slate-900">Ejemplo</p>
-                  <p className="mt-2">
-                    Si tus ventas mensuales fueron de{" "}
-                    <span className="font-medium">
-                      {ventasMensualesParseado !== null
-                        ? formatUsd(ventasMensualesParseado)
-                        : "—"}
-                    </span>
-                    , la comisión mensual estimada de Punto Pago sería de{" "}
-                    <span className="font-medium">
-                      {formatUsd(comisionMensualRecomendada(resultadoComision))}
-                    </span>
-                    , con base en el volumen y el modelo visto en esta cotización.
-                  </p>
-                </section>
-              </>
-            )}
-
-          {form.tipoServicioPuntoPago === "hub_pagos" && (
-            <>
-              <section className="mt-8">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Set up fee (referencial)
-                </h3>
-                <p className="mt-2 text-2xl font-bold text-slate-900">
-                  {formatUsd(SETUP_FEE_HUB_REF_USD)}
-                </p>
-              </section>
-              <section className="mt-8">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Comisiones que Punto Pago paga al cliente
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                  Estimación orientativa según volumen y acuerdo por cada pago
-                  procesado con Hub de pagos. Próximamente: cotizador en línea para
-                  mayor precisión.
-                </p>
-              </section>
-            </>
-          )}
-
-          {form.tipoServicioPuntoPago === "cash_out" &&
-            cashOutCargoMensualEstimado !== null && (
-              <>
-                <section className="mt-8">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Volumen mensual estimado (desembolsos)
-                  </h3>
-                  <p className="mt-2 text-xl font-bold text-slate-900">
-                    {formatUsd(parseMontoUsd(form.volumenCashOutMensualUsd) ?? 0)}
-                  </p>
-                </section>
-                <section className="mt-8">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Cargo referencial al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}%)
-                  </h3>
-                  <p className="mt-2 text-2xl font-bold text-brand">
-                    {formatUsd(cashOutCargoMensualEstimado)}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-700">
-                    Punto Pago cobra por cada desembolso según acuerdo comercial.
-                  </p>
-                </section>
-              </>
-            )}
-
-          {form.tipoServicioPuntoPago === "agentes" && (
-            <section className="mt-8">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Set up referencial
-              </h3>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                {formatUsd(SETUP_FEE_HUB_REF_USD)}
-              </p>
-              <p className="mt-3 text-sm text-slate-700">
-                Cotización detallada para agentes en preparación (mismo esquema
-                referencial que Hub de pagos).
-              </p>
-            </section>
-          )}
-
-          <p className="mt-8 text-xs leading-relaxed text-slate-500">
-            Cifras referenciales. Vigencia, riesgo y condiciones finales se confirman
-            con el equipo comercial de Punto Pago.
-          </p>
-        </article>
+        <CotizacionPdfClienteDocument
+          refCotizacion={ref}
+          fechaExportacion={fechaExportacionPdf}
+          form={form}
+          industriaLabel={industriaLabel}
+          servicioLabel={servicioLabel}
+          ventasMensualesParseado={ventasMensualesParseado}
+          ticketPromedioDerivado={ticketPromedioDerivado}
+          resultadoIntegracion={resultadoIntegracion}
+          resultadoComision={resultadoComision}
+          cashOutCargoMensualEstimado={cashOutCargoMensualEstimado}
+          volumenCashOutUsd={volumenCashOutUsd}
+        />
 
         <article
           id="cotizacion-document"
@@ -1157,11 +1025,40 @@ export function CotizadorApp() {
               </p>
             </div>
 
+            {form.tipoServicioPuntoPago === "kioscos" && (
+              <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50/90 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Alcance del servicio
+                </h3>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  Botón de recaudo (botón en kioscos)
+                </p>
+                <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+                  <li>
+                    El <strong>botón de recaudo</strong> del comercio se muestra{" "}
+                    <strong>de forma gratuita</strong> en la{" "}
+                    <strong>aplicación Punto Pago</strong> para los usuarios finales.
+                  </li>
+                  <li>
+                    El mismo servicio <strong>también estará disponible</strong> en la{" "}
+                    <strong>red de kioscos y puntos de pago Punto Pago</strong>, según la
+                    integración, modalidad y condiciones comerciales acordadas.
+                  </li>
+                </ul>
+              </section>
+            )}
+
             <section className="mt-8">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Contexto del negocio (USD)
               </h3>
               <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <dt className="text-slate-500">Industria / segmento</dt>
+                  <dd className="font-medium text-slate-900">
+                    {industriaLabel || "—"}
+                  </dd>
+                </div>
                 <div className="sm:col-span-2">
                   <dt className="text-slate-500">Monto total mensual de ventas</dt>
                   <dd className="font-medium text-slate-900">
@@ -1190,18 +1087,6 @@ export function CotizadorApp() {
                     {resultadoComision
                       ? formatUsd(resultadoComision.volumenMensualUsd)
                       : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Canal o modelo de cobro</dt>
-                  <dd className="font-medium text-slate-900">{form.canal || "—"}</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-slate-500">
-                    Clientes no bancarizados (efectivo en red)
-                  </dt>
-                  <dd className="font-medium text-slate-900 whitespace-pre-wrap">
-                    {form.estimadoNoBancarizados.trim() || "—"}
                   </dd>
                 </div>
                 <div className="sm:col-span-2">
@@ -1290,16 +1175,27 @@ export function CotizadorApp() {
                   Comisión recomendada (referencial)
                 </h3>
                 <p className="mt-2 text-xs text-slate-500">
-                  Entre {formatPct(resultadoComision.pct)} sobre cada venta y{" "}
-                  {formatUsd(resultadoComision.fijoUsd)} por transacción, conviene el
-                  modelo indicado abajo. Punto Pago factura al comercio el total del
-                  período según el modelo acordado.
+                  {resultadoComision.comisionSoloPorcentaje ? (
+                    <>
+                      Política referencial de {formatPct(resultadoComision.pct)} sobre
+                      cada venta para este segmento (sin comparar con el modelo fijo
+                      por transacción). Punto Pago factura al comercio según lo
+                      acordado.
+                    </>
+                  ) : (
+                    <>
+                      Entre {formatPct(resultadoComision.pct)} sobre cada venta y{" "}
+                      {formatUsd(resultadoComision.fijoUsd)} por transacción, conviene
+                      el modelo indicado abajo. Punto Pago factura al comercio el
+                      total del período según el modelo acordado.
+                    </>
+                  )}
                 </p>
                 <dl className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-sm">
                   <div>
                     <dt className="text-slate-500">Modelo recomendado</dt>
                     <dd className="font-semibold text-slate-900">
-                      {tituloModeloRecomendado(resultadoComision.recomendacion)}
+                      {tituloModeloRecomendado(resultadoComision)}
                     </dd>
                   </div>
                   <div>
@@ -1316,7 +1212,7 @@ export function CotizadorApp() {
                   </div>
                 </dl>
                 <p className="mt-3 text-sm text-slate-700">
-                  {textoRecomendacion(resultadoComision.recomendacion)}
+                  {textoExplicativoComision(resultadoComision)}
                 </p>
               </section>
             )}
@@ -1356,7 +1252,30 @@ export function CotizadorApp() {
         </article>
 
         <div id="cotizacion-texto-plano" className="sr-only" aria-hidden="true">
-          {`COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Canal o modelo de cobro: ${form.canal || "—"}\n- Clientes no bancarizados (efectivo en red): ${form.estimadoNoBancarizados.trim() || "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${resultadoIntegracion ? resultadoIntegracion.industriaLabel : form.industriaId || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Reporte FTP/correo sin BD: ${form.reporteFtpEmailSinBd ? "Sí" : "No"}\n- Tecnología: ${form.tecnologiaStack || "—"}${form.tecnologiaDetalle.trim() ? ` (${form.tecnologiaDetalle.trim()})` : ""}\n- Recaudo red kioscos: ${form.incluyeRecaudoKioscos ? `Sí (+${formatUsd(RECARGO_RECAUDO_KIOSCOS_USD)})` : "No"}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}\n\nComisión recomendada (referencial; ${DEFAULT_COMISION_PORCENTAJE}% vs ${DEFAULT_COMISION_FIJA_USD} USD por txn):\n${resultadoComision ? `- Modelo: ${tituloModeloRecomendado(resultadoComision.recomendacion)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoRecomendacion(resultadoComision.recomendacion)}` : "- Complete monto y cantidad de ventas (sección 3).\n"}\n${form.observaciones ? `Notas:\n${form.observaciones}\n\n` : ""}Condiciones:\n${form.condicionesComerciales}\n\n${form.nombreVendedor ? form.nombreVendedor + " · " : ""}Equipo comercial Punto Pago`}
+          {(() => {
+            const lineaVigencia =
+              fechaExportacionPdf !== null
+                ? `Vigencia: 15 días naturales desde la exportación (${formatFechaHoraEmision(fechaExportacionPdf)}). Vence el ${formatSoloFechaLarga(fechaMasDias(fechaExportacionPdf, 15))}.`
+                : "Vigencia: 15 días naturales desde la exportación del PDF (fecha al generar el documento).";
+            const bloqueAlcance =
+              form.tipoServicioPuntoPago === "kioscos"
+                ? `\nAlcance del servicio (botón de recaudo):\n- El botón de recaudo se muestra de forma gratuita en la aplicación Punto Pago para los usuarios finales.\n- El mismo servicio también estará disponible en la red de kioscos y puntos de pago Punto Pago, según la integración y condiciones acordadas.\n`
+                : form.tipoServicioPuntoPago === "hub_pagos"
+                  ? `\nAlcance del servicio: Hub de pagos — concentración y procesamiento de pagos; detalle operativo con el equipo comercial.\n`
+                  : form.tipoServicioPuntoPago === "cash_out"
+                    ? `\nAlcance del servicio: Cash out / desembolsos; condiciones operativas en el acuerdo comercial.\n`
+                    : form.tipoServicioPuntoPago === "agentes"
+                      ? `\nAlcance del servicio: Agentes — esquema referencial; detalle con Punto Pago.\n`
+                      : "";
+            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Reporte FTP/correo sin BD: ${form.reporteFtpEmailSinBd ? "Sí" : "No"}\n- Tecnología: ${form.tecnologiaStack || "—"}${form.tecnologiaDetalle.trim() ? ` (${form.tecnologiaDetalle.trim()})` : ""}\n- Recaudo red kioscos: ${form.incluyeRecaudoKioscos ? `Sí (+${formatUsd(RECARGO_RECAUDO_KIOSCOS_USD)})` : "No"}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
+            const bloqueComision = resultadoComision
+              ? resultadoComision.comisionSoloPorcentaje
+                ? `\n\nComisión (referencial — política 5% segmento):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- ${textoExplicativoComision(resultadoComision)}`
+                : `\n\nComisión recomendada (referencial; ${DEFAULT_COMISION_PORCENTAJE}% vs ${DEFAULT_COMISION_FIJA_USD} USD por txn):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(resultadoComision)}`
+              : "\n\nComisión: complete monto y cantidad de ventas (sección 4).\n";
+            const cola = `\n${form.observaciones ? `Notas:\n${form.observaciones}\n\n` : ""}Condiciones:\n${form.condicionesComerciales}\n\n${form.nombreVendedor ? form.nombreVendedor + " · " : ""}Equipo comercial Punto Pago`;
+            return cabeza + bloqueComision + cola;
+          })()}
         </div>
       </div>
     </div>

@@ -23,6 +23,7 @@ export async function exportarCotizacionPdf(
     scale: 2,
     useCORS: true,
     logging: false,
+    backgroundColor: "#eef0f8",
   });
   const imgData = canvas.toDataURL("image/png");
   const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });

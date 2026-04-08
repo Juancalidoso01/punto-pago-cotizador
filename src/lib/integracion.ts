@@ -8,12 +8,22 @@ export const RECARGO_RECAUDO_KIOSCOS_USD = 2000;
 /** Set up fijo cuando el cliente no tiene BD y Punto Pago entrega reportes por FTP o correo */
 export const SETUP_FEE_FTP_EMAIL_USD = 1000;
 
+/** Comisión cash-in / botón kioscos: comparar 3% vs 1.25 USD, o solo 5% (segmentos) */
+export type PoliticaComisionCashIn =
+  | "comparar_3_vs_125"
+  | "solo_5";
+
 export type IndustriaOpcion = {
   id: string;
   label: string;
   precioIntegracionBaseUsd: number;
   /** Para agrupar en el selector */
   grupo: string;
+  /**
+   * Política de comisión mensual referencial (cash-in).
+   * Por defecto: comparar 3% vs 1.25 USD por txn.
+   */
+  comisionCashIn?: PoliticaComisionCashIn;
 };
 
 /** Orden de aparición de los grupos en el <select> */
@@ -21,6 +31,7 @@ export const ORDEN_GRUPOS_INDUSTRY: string[] = [
   "Banca y servicios financieros",
   "Telecomunicaciones y medios",
   "Pagos, remesas y procesamiento",
+  "Juegos y apuestas",
   "Transporte y movilidad",
   "Retail, consumo y servicios",
   "Infraestructura y sector público",
@@ -36,10 +47,18 @@ export const INDUSTRIAS: IndustriaOpcion[] = [
     grupo: "Banca y servicios financieros",
   },
   {
-    id: "financiera",
-    label: "Financiera (crédito, arrendamiento, consumo)",
+    id: "financiera_tradicional",
+    label: "Financiera tradicional (crédito, arrendamiento, consumo)",
     precioIntegracionBaseUsd: 6000,
     grupo: "Banca y servicios financieros",
+  },
+  {
+    id: "financiera_no_bancarizados",
+    label:
+      "Financiera para no bancarizados (ej. Krediya, Japy, Adelantos — mayor margen)",
+    precioIntegracionBaseUsd: 7000,
+    grupo: "Banca y servicios financieros",
+    comisionCashIn: "solo_5",
   },
   {
     id: "cooperativa",
@@ -80,10 +99,24 @@ export const INDUSTRIAS: IndustriaOpcion[] = [
     grupo: "Pagos, remesas y procesamiento",
   },
   {
+    id: "remesas_internacionales",
+    label: "Remesas internacionales",
+    precioIntegracionBaseUsd: 7000,
+    grupo: "Pagos, remesas y procesamiento",
+  },
+  {
     id: "fintech",
     label: "Fintech / billetera / neobank",
     precioIntegracionBaseUsd: 6500,
     grupo: "Pagos, remesas y procesamiento",
+  },
+  // Juegos y apuestas
+  {
+    id: "apuestas_deportivas",
+    label: "Casa de apuestas — rubro deportivo",
+    precioIntegracionBaseUsd: 7000,
+    grupo: "Juegos y apuestas",
+    comisionCashIn: "solo_5",
   },
   // Transporte y movilidad
   {

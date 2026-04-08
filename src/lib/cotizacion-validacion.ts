@@ -6,7 +6,6 @@ function esCotizacionCompletaKioscos(
   resultadoIntegracion: ResultadoPrecioIntegracion | null,
   resultadoComision: ResultadoComision | null,
 ): boolean {
-  if (!form.industriaId.trim()) return false;
   if (!form.tecnologiaStack.trim()) return false;
   if (
     !form.reporteFtpEmailSinBd &&
@@ -36,6 +35,7 @@ export function esCotizacionCompleta(
 ): boolean {
   if (!form.empresa.trim() || !form.email.trim().includes("@")) return false;
   if (!form.tipoServicioPuntoPago) return false;
+  if (!form.industriaId.trim()) return false;
 
   switch (form.tipoServicioPuntoPago) {
     case "kioscos":

@@ -7,7 +7,10 @@ import {
   parseMontoUsd,
   type ResultadoComision,
 } from "@/lib/comision";
-import type { ResultadoPrecioIntegracion } from "@/lib/integracion";
+import {
+  buscarIndustria,
+  type ResultadoPrecioIntegracion,
+} from "@/lib/integracion";
 import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
@@ -29,6 +32,8 @@ export function buildCotizacionPayload(
     email: form.email,
     contacto: form.contactoNombre,
     vendedor: form.nombreVendedor,
+    industriaId: form.industriaId,
+    industria: buscarIndustria(form.industriaId)?.label ?? "",
     tipoServicioPuntoPago: form.tipoServicioPuntoPago,
     volumenCashOutMensualUsd: form.volumenCashOutMensualUsd,
     productoInteres: form.productoInteres,
@@ -39,7 +44,6 @@ export function buildCotizacionPayload(
   if (form.tipoServicioPuntoPago === "kioscos" && resultadoIntegracion && resultadoComision) {
     return {
       ...base,
-      industria: resultadoIntegracion.industriaLabel,
       modalidad: resultadoIntegracion.resumenModalidad,
       reporteFtpEmailSinBd: form.reporteFtpEmailSinBd,
       tecnologia: form.tecnologiaStack,
@@ -49,11 +53,10 @@ export function buildCotizacionPayload(
       totalIntegracionUsd: resultadoIntegracion.totalUsd,
       ventasMensualesUsd: parseMontoUsd(form.ventasMensualesTotalUsd) ?? 0,
       cantidadVentasMes: parseEnteroPositivo(form.cantidadVentasMensuales) ?? 0,
-      canal: form.canal,
-      noBancarizados: form.estimadoNoBancarizados,
-      modeloComisionRecomendado: tituloModeloRecomendado(
-        resultadoComision.recomendacion,
-      ),
+      politicaComisionCashIn: resultadoComision.comisionSoloPorcentaje
+        ? "solo_5"
+        : "comparar_3_vs_125",
+      modeloComisionRecomendado: tituloModeloRecomendado(resultadoComision),
       costoTxnRecomendadoUsd: costoTxnRecomendado(resultadoComision),
       comisionMensualEstUsd: comisionMensualRecomendada(resultadoComision),
       volumenMensualUsd: resultadoComision.volumenMensualUsd,
