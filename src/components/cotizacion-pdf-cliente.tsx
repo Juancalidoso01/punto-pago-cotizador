@@ -43,30 +43,16 @@ function BloqueAlcanceServicio({
   if (tipoServicio === "kioscos") {
     return (
       <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm ring-1 ring-slate-100">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-          Alcance del servicio
-        </h3>
-        <p className="mt-1 text-sm font-medium text-slate-900">
-          Tres alcances incluidos al integrarse con Punto Pago (misma cotización)
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          La <strong>integración técnica</strong> (web services / batch) es la que se describe y cotiza
-          en este documento. Punto Pago cobra el{" "}
-          <strong>fee de implementación (set up)</strong> y el{" "}
-          <strong>fee mensual</strong> (comisión sobre operaciones); al contratar la integración y
-          pagar el set up, los tres alcances siguientes se habilitan{" "}
-          <strong>sin cargo adicional</strong> por canal.
-        </p>
-        <div className="mt-4 grid grid-cols-3 gap-3 border-y border-slate-100 py-4">
+        <div className="grid grid-cols-3 gap-3 border-y border-slate-100 py-4">
           <div
             className="flex flex-col items-center justify-center"
             aria-label="Red de kioscos"
           >
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
+            <div className="overflow-hidden rounded-xl bg-neutral-950 shadow-sm ring-1 ring-slate-100">
               <img
                 src={IMAGEN_ALCANCE_KIOSCOS}
                 alt=""
-                className="h-28 w-full object-cover sm:h-32"
+                className="h-28 w-full object-contain object-center sm:h-32"
               />
             </div>
           </div>
@@ -74,11 +60,11 @@ function BloqueAlcanceServicio({
             className="flex flex-col items-center justify-center"
             aria-label="App Punto Pago"
           >
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
+            <div className="overflow-hidden rounded-xl bg-blue-600 shadow-sm ring-1 ring-slate-100">
               <img
                 src={IMAGEN_ALCANCE_APP}
                 alt=""
-                className="h-28 w-full object-cover sm:h-32"
+                className="h-28 w-full object-contain object-center sm:h-32"
               />
             </div>
           </div>
@@ -90,7 +76,7 @@ function BloqueAlcanceServicio({
               <img
                 src={IMAGEN_ALCANCE_API}
                 alt=""
-                className="h-28 w-full object-cover sm:h-32"
+                className="h-28 w-full object-contain object-center sm:h-32"
               />
             </div>
           </div>
@@ -428,7 +414,7 @@ export function CotizacionPdfClienteDocument({
   return (
     <article
       id="cotizacion-cliente-document"
-      className="fixed -left-[9999px] top-0 z-0 w-[794px] overflow-hidden bg-[#eef0f8] shadow-sm print:static print:left-auto print:top-auto print:z-auto print:w-full print:max-w-none print:rounded-none print:shadow-none"
+      className="fixed -left-[9999px] top-0 z-0 w-[794px] overflow-visible bg-[#eef0f8] shadow-sm print:static print:left-auto print:top-auto print:z-auto print:w-full print:max-w-none print:rounded-none print:shadow-none"
     >
       <header className="relative px-10 pb-16 pt-10 text-white print:px-8 print:pb-14 print:pt-8">
         <div

@@ -1186,25 +1186,25 @@ export function CotizadorApp() {
                   <strong>sin cargo adicional</strong> por canal.
                 </p>
                 <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-                  <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                  <div className="overflow-hidden rounded-xl bg-neutral-950 shadow-sm ring-1 ring-slate-200">
                     <img
                       src={IMAGEN_ALCANCE_KIOSCOS}
                       alt=""
-                      className="h-24 w-full object-cover sm:h-28"
+                      className="h-24 w-full object-contain object-center sm:h-28"
                     />
                   </div>
-                  <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                  <div className="overflow-hidden rounded-xl bg-blue-600 shadow-sm ring-1 ring-slate-200">
                     <img
                       src={IMAGEN_ALCANCE_APP}
                       alt=""
-                      className="h-24 w-full object-cover sm:h-28"
+                      className="h-24 w-full object-contain object-center sm:h-28"
                     />
                   </div>
                   <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
                     <img
                       src={IMAGEN_ALCANCE_API}
                       alt=""
-                      className="h-24 w-full object-cover sm:h-28"
+                      className="h-24 w-full object-contain object-center sm:h-28"
                     />
                   </div>
                 </div>
