@@ -62,6 +62,7 @@ import { esEmailFormatoValido } from "@/lib/email";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
+  TEXTO_MODELO_COMISION_HUB_AGENTES,
   TIPOS_SERVICIO_PUNTO_PAGO,
 } from "@/lib/tipo-servicio-punto-pago";
 
@@ -621,12 +622,7 @@ export function CotizadorApp() {
                   </span>
                   {formatUsd(SETUP_FEE_HUB_REF_USD)} (USD).
                 </p>
-                <p>
-                  Las <strong>comisiones que Punto Pago paga al cliente</strong>{" "}
-                  dependen del volumen y del acuerdo por cada pago procesado con este
-                  servicio. Es una estimación orientativa; más adelante habrá un{" "}
-                  <strong>cotizador en línea</strong> para afinar el monto.
-                </p>
+                <p className="leading-relaxed">{TEXTO_MODELO_COMISION_HUB_AGENTES}</p>
               </div>
             </div>
           )}
@@ -676,12 +672,16 @@ export function CotizadorApp() {
           {form.tipoServicioPuntoPago === "agentes" && (
             <div className="border-t border-slate-100 pt-6">
               <h3 className="text-base font-semibold text-slate-900">Agentes</h3>
-              <p className="mt-2 text-sm text-slate-600">
-                Mismo esquema referencial que Hub de pagos (set up{" "}
-                {formatUsd(SETUP_FEE_HUB_REF_USD)}). El cotizador detallado para el
-                cliente queda <strong>pendiente</strong>; pronto incorporaremos los
-                datos para cotizar en línea.
-              </p>
+              <div className="mt-2 space-y-3 text-sm text-slate-600">
+                <p>
+                  <span className="font-semibold text-slate-800">Set up referencial:</span>{" "}
+                  {formatUsd(SETUP_FEE_HUB_REF_USD)} (USD). Mismo modelo de comisiones que
+                  Hub de pagos.
+                </p>
+                <p className="leading-relaxed text-slate-700">
+                  {TEXTO_MODELO_COMISION_HUB_AGENTES}
+                </p>
+              </div>
             </div>
           )}
 

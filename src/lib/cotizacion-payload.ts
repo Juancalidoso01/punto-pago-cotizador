@@ -15,6 +15,7 @@ import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
+  TEXTO_MODELO_COMISION_HUB_AGENTES,
 } from "@/lib/tipo-servicio-punto-pago";
 
 /** Payload plano para Google Sheets o logs (una fila = una cotización) */
@@ -78,8 +79,7 @@ export function buildCotizacionPayload(
     return {
       ...base,
       setupFeeHubRefUsd: SETUP_FEE_HUB_REF_USD,
-      notaComisiones:
-        "Comisiones que Punto Pago paga al cliente por pagos procesados (estimación; cotizador en línea próximo).",
+      notaComisiones: TEXTO_MODELO_COMISION_HUB_AGENTES,
     };
   }
 
@@ -87,8 +87,7 @@ export function buildCotizacionPayload(
     return {
       ...base,
       setupFeeHubRefUsd: SETUP_FEE_HUB_REF_USD,
-      nota:
-        "Agentes: mismo esquema referencial que Hub; cotizador detallado pendiente.",
+      nota: `Agentes. ${TEXTO_MODELO_COMISION_HUB_AGENTES}`,
     };
   }
 
