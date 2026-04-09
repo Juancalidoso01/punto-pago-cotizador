@@ -56,6 +56,10 @@ import {
   resolverResultadoComisionEfectivoKioscos,
   resolverSetupFeeKioscosPdf,
 } from "@/lib/cotizacion-kioscos-montos";
+import {
+  resolverCashOutCargoMensualPdf,
+  resolverSetupTarifaStandardPdf,
+} from "@/lib/cotizacion-tarifa-standard-montos";
 import { buildCotizacionPayload } from "@/lib/cotizacion-payload";
 import { esCotizacionCompleta } from "@/lib/cotizacion-validacion";
 import {
@@ -144,6 +148,28 @@ export function CotizadorApp() {
       campo:
         | "kioscosDescuentoPctImplementacion"
         | "kioscosDescuentoPctTarifaComision",
+    ) => {
+      setForm((prev) => {
+        const raw = prev[campo].trim();
+        if (raw === "") return prev;
+        const p = parsePorcentajeDescuento(raw);
+        if (p === null) return { ...prev, [campo]: "" };
+        const out =
+          p === Math.floor(p)
+            ? String(Math.floor(p))
+            : String(Math.round(p * 10) / 10);
+        if (prev[campo] === out) return prev;
+        return { ...prev, [campo]: out };
+      });
+    },
+    [],
+  );
+
+  const onBlurNormalizarPctDescuentoTarifaStd = useCallback(
+    (
+      campo:
+        | "descuentoPctSetupTarifaStandard"
+        | "descuentoPctCashOutCargoMensual",
     ) => {
       setForm((prev) => {
         const raw = prev[campo].trim();
@@ -385,6 +411,26 @@ export function CotizadorApp() {
     if (v === null || v <= 0) return null;
     return v * (CASH_OUT_CARGO_CLIENTE_PCT / 100);
   }, [form.tipoServicioPuntoPago, form.volumenCashOutMensualUsd]);
+
+  const setupTarifaStandardResuelto = useMemo(() => {
+    if (
+      form.tipoServicioPuntoPago !== "hub_pagos" &&
+      form.tipoServicioPuntoPago !== "cash_out"
+    ) {
+      return null;
+    }
+    return resolverSetupTarifaStandardPdf(form);
+  }, [form]);
+
+  const cashOutCargoConDescuento = useMemo(() => {
+    if (
+      form.tipoServicioPuntoPago !== "cash_out" ||
+      cashOutCargoMensualEstimado === null
+    ) {
+      return null;
+    }
+    return resolverCashOutCargoMensualPdf(form, cashOutCargoMensualEstimado);
+  }, [form, cashOutCargoMensualEstimado]);
 
   const cotizacionCompleta = useMemo(
     () => esCotizacionCompleta(form, resultadoIntegracion, resultadoComision),
@@ -733,7 +779,17 @@ export function CotizadorApp() {
                   <span className="font-semibold text-slate-900">
                     Set up fee referencial:{" "}
                   </span>
-                  {formatUsd(SETUP_FEE_HUB_REF_USD)} (USD).
+                  {setupTarifaStandardResuelto
+                    ? formatUsd(setupTarifaStandardResuelto.monto)
+                    : formatUsd(SETUP_FEE_HUB_REF_USD)}{" "}
+                  (USD).
+                  {setupTarifaStandardResuelto !== null &&
+                  setupTarifaStandardResuelto.descuentoPct !== null ? (
+                    <span className="mt-1 block text-xs font-medium text-brand">
+                      Con descuento {formatPct(setupTarifaStandardResuelto.descuentoPct)}{" "}
+                      sobre {formatUsd(setupTarifaStandardResuelto.baseUsd)} de referencia.
+                    </span>
+                  ) : null}
                 </p>
                 <p className="leading-relaxed">{TEXTO_MODELO_COMISION_HUB_AGENTES}</p>
               </div>
@@ -769,15 +825,100 @@ export function CotizadorApp() {
                     placeholder="Ej. 80,000"
                   />
                 </label>
-                {cashOutCargoMensualEstimado !== null && (
+                {cashOutCargoConDescuento !== null && (
                   <p className="rounded-xl border border-brand/25 bg-brand/5 p-3 text-sm">
                     <span className="font-medium text-slate-900">
                       Cargo mensual estimado al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}
                       %):{" "}
                     </span>
-                    {formatUsd(cashOutCargoMensualEstimado)}
+                    {formatUsd(cashOutCargoConDescuento.monto)}
+                    {cashOutCargoConDescuento.descuentoPct !== null ? (
+                      <span className="mt-1 block text-xs font-medium text-brand">
+                        Con descuento{" "}
+                        {formatPct(cashOutCargoConDescuento.descuentoPct)} sobre{" "}
+                        {formatUsd(cashOutCargoConDescuento.baseUsd)} de referencia.
+                      </span>
+                    ) : null}
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {(form.tipoServicioPuntoPago === "hub_pagos" ||
+            form.tipoServicioPuntoPago === "cash_out") && (
+            <div className="border-t border-slate-100 pt-6">
+              <h3 className="text-base font-semibold text-slate-900">
+                Descuentos sobre tarifas referenciales (opcional)
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Igual que en otras líneas: aplica un <strong>% de descuento</strong> sobre
+                el set up estándar ({formatUsd(SETUP_FEE_HUB_REF_USD)}).{" "}
+                {form.tipoServicioPuntoPago === "cash_out" ? (
+                  <>
+                    En <strong>Cash out</strong> puedes además descontar sobre el{" "}
+                    <strong>cargo mensual estimado</strong> (el calculado con el volumen y
+                    el {CASH_OUT_CARGO_CLIENTE_PCT}% referencial).
+                  </>
+                ) : null}{" "}
+                Vacío = sin descuento.
+              </p>
+              <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-4 sm:p-5">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">
+                    Descuento % sobre set up referencial (
+                    {formatUsd(SETUP_FEE_HUB_REF_USD)})
+                  </span>
+                  <input
+                    className={`${inputClass} max-w-[12rem] text-right tabular-nums`}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={form.descuentoPctSetupTarifaStandard}
+                    onChange={(e) =>
+                      setField(
+                        "descuentoPctSetupTarifaStandard",
+                        e.target.value.replace(/[^\d.,]/g, ""),
+                      )
+                    }
+                    onBlur={() =>
+                      onBlurNormalizarPctDescuentoTarifaStd(
+                        "descuentoPctSetupTarifaStandard",
+                      )
+                    }
+                    placeholder="Ej. 10"
+                  />
+                </label>
+                {form.tipoServicioPuntoPago === "cash_out" ? (
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">
+                      Descuento % sobre cargo mensual estimado (referencial)
+                    </span>
+                    <input
+                      className={`${inputClass} max-w-[12rem] text-right tabular-nums`}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={form.descuentoPctCashOutCargoMensual}
+                      onChange={(e) =>
+                        setField(
+                          "descuentoPctCashOutCargoMensual",
+                          e.target.value.replace(/[^\d.,]/g, ""),
+                        )
+                      }
+                      onBlur={() =>
+                        onBlurNormalizarPctDescuentoTarifaStd(
+                          "descuentoPctCashOutCargoMensual",
+                        )
+                      }
+                      placeholder="Ej. 15"
+                    />
+                    {cashOutCargoMensualEstimado === null ? (
+                      <span className="mt-1 block text-xs text-slate-500">
+                        Indica primero el volumen mensual de desembolsos para ver el cargo
+                        de referencia.
+                      </span>
+                    ) : null}
+                  </label>
+                ) : null}
               </div>
             </div>
           )}
@@ -1863,14 +2004,32 @@ export function CotizadorApp() {
                   }`
                 : "";
             const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nVendedor: ${form.nombreVendedor.trim() || "—"}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Set up fee est.: ${setupFeePlano}\n- Total integración est.: ${totalIntegracionPlano}`;
+            const setupStdPlano = resolverSetupTarifaStandardPdf(form);
+            const cargoCashPlano =
+              form.tipoServicioPuntoPago === "cash_out" &&
+              cashOutCargoMensualEstimado !== null
+                ? resolverCashOutCargoMensualPdf(form, cashOutCargoMensualEstimado)
+                : null;
+            const descSetupTxt =
+              setupStdPlano.descuentoPct !== null
+                ? ` (desc. ${formatPct(setupStdPlano.descuentoPct)} s/ ref.)`
+                : "";
             const bloqueComision =
-              resultadoComision && rM
-                ? hayTarifaComercialPersonalizadaActiva(form)
-                  ? `\n\nComisión (referencial — tarifa indicada en cotizador, sección 6):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
-                  : rM.comisionSoloPorcentaje
-                    ? `\n\nComisión (referencial — política porcentaje del segmento):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- ${textoExplicativoComision(rM)}`
-                    : `\n\nComisión recomendada (referencial; ${formatPct(rM.pct)} vs ${formatUsd(rM.fijoUsd)} por txn):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
-                : "\n\nComisión: complete monto y cantidad de ventas (sección 4).\n";
+              form.tipoServicioPuntoPago === "hub_pagos"
+                ? `\n\nHub de pagos (referencial):\n- Set up fee mostrado: ${formatUsd(setupStdPlano.monto)}${descSetupTxt}\n- Comisiones: modelo mixto con marcas/servicios; detalle con equipo comercial.\n`
+                : form.tipoServicioPuntoPago === "cash_out"
+                  ? cargoCashPlano !== null
+                    ? `\n\nCash out (referencial):\n- Set up fee mostrado: ${formatUsd(setupStdPlano.monto)}${descSetupTxt}\n- Volumen mensual desembolsos: ${formatUsd(volumenCashOutUsd)}\n- Cargo mensual estimado (${CASH_OUT_CARGO_CLIENTE_PCT}%): ${formatUsd(cargoCashPlano.monto)}${cargoCashPlano.descuentoPct !== null ? ` (desc. ${formatPct(cargoCashPlano.descuentoPct)} s/ ref.)` : ""}\n`
+                    : `\n\nCash out (referencial):\n- Set up fee mostrado: ${formatUsd(setupStdPlano.monto)}${descSetupTxt}\n- Indique volumen mensual de desembolsos para estimar el cargo al cliente.\n`
+                  : form.tipoServicioPuntoPago === "agentes"
+                    ? `\n\nAgentes: cotización orientativa; condiciones y comisiones con equipo comercial.\n`
+                    : resultadoComision && rM
+                      ? hayTarifaComercialPersonalizadaActiva(form)
+                        ? `\n\nComisión (referencial — tarifa indicada en cotizador, sección 6):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
+                        : rM.comisionSoloPorcentaje
+                          ? `\n\nComisión (referencial — política porcentaje del segmento):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- ${textoExplicativoComision(rM)}`
+                          : `\n\nComisión recomendada (referencial; ${formatPct(rM.pct)} vs ${formatUsd(rM.fijoUsd)} por txn):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
+                      : "\n\nComisión / servicio: complete datos según el tipo de cotización o elija botón en kioscos.\n";
             const cola = `\n${form.observaciones ? `Notas:\n${form.observaciones}\n\n` : ""}Condiciones:\n${form.condicionesComerciales}\n\n${form.nombreVendedor ? form.nombreVendedor + " · " : ""}Equipo comercial Punto Pago`;
             return cabeza + bloqueComision + cola;
           })()}

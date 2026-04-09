@@ -62,6 +62,13 @@ export type CotizacionForm = {
   kioscosTarifaComercialPct: string;
   /** Si modo fijo_txn: USD por transacción (sustituye tarifa referencial en el documento) */
   kioscosTarifaComercialFijoTxnUsd: string;
+  /**
+   * Hub de pagos y Cash out: descuento % opcional sobre el set up referencial estándar
+   * (USD 5.000).
+   */
+  descuentoPctSetupTarifaStandard: string;
+  /** Cash out: descuento % opcional sobre el cargo mensual estimado (referencial). */
+  descuentoPctCashOutCargoMensual: string;
 };
 
 /** Opciones de pago del set up (referencial; se acuerda con comercial) */
@@ -124,5 +131,7 @@ export function createEmptyForm(): CotizacionForm {
     kioscosTarifaComercialModo: "",
     kioscosTarifaComercialPct: "",
     kioscosTarifaComercialFijoTxnUsd: "",
+    descuentoPctSetupTarifaStandard: "",
+    descuentoPctCashOutCargoMensual: "",
   };
 }

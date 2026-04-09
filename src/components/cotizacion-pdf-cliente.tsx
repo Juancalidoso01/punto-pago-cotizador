@@ -16,6 +16,10 @@ import {
   resolverSetupFeeKioscosPdf,
 } from "@/lib/cotizacion-kioscos-montos";
 import {
+  resolverCashOutCargoMensualPdf,
+  resolverSetupTarifaStandardPdf,
+} from "@/lib/cotizacion-tarifa-standard-montos";
+import {
   fechaMasDias,
   formatFechaHoraEmision,
   formatSoloFechaLarga,
@@ -28,10 +32,12 @@ import {
 } from "@/lib/alcance-servicio-kioscos";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
+  HUB_PAGOS_PILARES_PDF,
+  HUB_PDF_TARJETAS_COMISION,
   PDF_AGENTES_BADGE_COOPERATIVAS,
   PDF_AGENTES_SUBTITULO,
+  PDF_HUB_TAGLINE,
   SETUP_FEE_HUB_REF_USD,
-  TEXTO_MODELO_COMISION_HUB_AGENTES,
 } from "@/lib/tipo-servicio-punto-pago";
 
 function IconoPdfAgente({
@@ -60,6 +66,243 @@ function IconoPdfAgente({
 }
 
 const DIAS_VALIDEZ_COTIZACION = 15;
+
+const hubPilarIconIds = [
+  "central",
+  "liquidez",
+  "proveedores",
+  "mensajes",
+  "portafolio",
+] as const;
+
+function SvgHubPilarIcon({
+  id,
+  className = "h-9 w-9",
+}: {
+  id: (typeof hubPilarIconIds)[number];
+  className?: string;
+}) {
+  const stroke = "currentColor";
+  const common = {
+    className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+    "aria-hidden": true as const,
+  };
+  switch (id) {
+    case "central":
+      return (
+        <svg {...common}>
+          <path
+            stroke={stroke}
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 7h16M4 12h16M4 17h10"
+          />
+          <rect
+            x="3"
+            y="4"
+            width="18"
+            height="16"
+            rx="2"
+            stroke={stroke}
+            strokeWidth="1.5"
+          />
+        </svg>
+      );
+    case "liquidez":
+      return (
+        <svg {...common}>
+          <path
+            stroke={stroke}
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 3v18M8 10c0-2 1.5-3 4-3s4 1 4 3-1.5 3-4 3-4 1-4 3 1.5 3 4 3 4-1 4-3"
+          />
+        </svg>
+      );
+    case "proveedores":
+      return (
+        <svg {...common}>
+          <path
+            stroke={stroke}
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 12h4l2-3 4 6 2-3h8"
+          />
+          <rect
+            x="2"
+            y="6"
+            width="6"
+            height="12"
+            rx="1"
+            stroke={stroke}
+            strokeWidth="1.5"
+          />
+        </svg>
+      );
+    case "mensajes":
+      return (
+        <svg {...common}>
+          <path
+            stroke={stroke}
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 8h12a2 2 0 012 2v6a2 2 0 01-2 2h-4l-4 3v-3H6a2 2 0 01-2-2v-6a2 2 0 012-2z"
+          />
+        </svg>
+      );
+    case "portafolio":
+      return (
+        <svg {...common}>
+          <rect
+            x="4"
+            y="4"
+            width="7"
+            height="7"
+            rx="1"
+            stroke={stroke}
+            strokeWidth="1.5"
+          />
+          <rect
+            x="13"
+            y="4"
+            width="7"
+            height="7"
+            rx="1"
+            stroke={stroke}
+            strokeWidth="1.5"
+          />
+          <rect
+            x="4"
+            y="13"
+            width="7"
+            height="7"
+            rx="1"
+            stroke={stroke}
+            strokeWidth="1.5"
+          />
+          <rect
+            x="13"
+            y="13"
+            width="7"
+            height="7"
+            rx="1"
+            stroke={stroke}
+            strokeWidth="1.5"
+          />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function PdfHubPilaresGrid({ dense }: { dense?: boolean }) {
+  const pad = dense ? "p-2.5" : "p-3";
+  const tituloCls = dense
+    ? "text-[10px] font-semibold leading-tight text-slate-900"
+    : "text-[11px] font-semibold leading-tight text-slate-900";
+  const resCls = dense
+    ? "mt-1 text-[9px] leading-snug text-slate-600"
+    : "mt-1 text-[10px] leading-snug text-slate-600";
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 print:grid-cols-5">
+      {HUB_PAGOS_PILARES_PDF.map((p, i) => (
+        <div
+          key={p.titulo}
+          className={`rounded-xl border border-indigo-200/70 bg-gradient-to-b from-indigo-50/90 to-white text-center shadow-sm ring-1 ring-indigo-100/60 ${pad}`}
+        >
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100">
+            <SvgHubPilarIcon id={hubPilarIconIds[i]} className="h-5 w-5" />
+          </div>
+          <p className={`mt-2 ${tituloCls}`}>{p.titulo}</p>
+          <p className={resCls}>{p.resumen}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PdfHubFlujoOperativo() {
+  const paso =
+    "flex min-w-0 flex-1 flex-col items-center rounded-xl border border-slate-200/90 bg-white px-2 py-3 text-center shadow-sm ring-1 ring-slate-100";
+  const flecha =
+    "hidden shrink-0 self-center text-lg font-bold text-indigo-300 sm:block print:block";
+  return (
+    <div
+      className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-1 print:flex-row"
+      aria-label="Flujo del hub"
+    >
+      <div className={paso}>
+        <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">
+          1
+        </span>
+        <p className="mt-1 text-[11px] font-semibold text-slate-900">
+          Tu canal digital
+        </p>
+        <p className="mt-0.5 text-[9px] leading-snug text-slate-600">
+          Web o banca en línea
+        </p>
+      </div>
+      <div className={flecha} aria-hidden>
+        →
+      </div>
+      <div
+        className={`${paso} border-indigo-200/80 bg-gradient-to-b from-indigo-50/80 to-white ring-indigo-100`}
+      >
+        <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">
+          2
+        </span>
+        <p className="mt-1 text-[11px] font-semibold text-slate-900">
+          Hub Punto Pago
+        </p>
+        <p className="mt-0.5 text-[9px] leading-snug text-slate-600">
+          Procesa y concentra pagos
+        </p>
+      </div>
+      <div className={flecha} aria-hidden>
+        →
+      </div>
+      <div className={paso}>
+        <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">
+          3
+        </span>
+        <p className="mt-1 text-[11px] font-semibold text-slate-900">
+          Marcas y servicios
+        </p>
+        <p className="mt-0.5 text-[9px] leading-snug text-slate-600">
+          Energía, agua, móvil y más
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function PdfHubTarjetasComision() {
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 print:grid-cols-4">
+      {HUB_PDF_TARJETAS_COMISION.map((t) => (
+        <div
+          key={t.titulo}
+          className="rounded-xl border border-slate-200/90 bg-gradient-to-br from-slate-50 to-white p-3 text-center shadow-sm ring-1 ring-slate-100"
+        >
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+            {t.titulo}
+          </p>
+          <p className="mt-1.5 text-sm font-bold tabular-nums leading-tight text-slate-900">
+            {t.valor}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function BloqueAlcanceServicio({
   tipoServicio,
@@ -127,18 +370,15 @@ function BloqueAlcanceServicio({
     return (
       <section
         data-pdf-evitar-corte
-        className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100"
+        className="mt-4 overflow-hidden rounded-2xl border border-indigo-200/50 bg-gradient-to-br from-white via-indigo-50/30 to-white p-4 shadow-sm ring-1 ring-indigo-100/60 sm:p-5"
       >
-        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-          Alcance del servicio
+        <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-500">
+          Alcance del servicio · Hub de pagos
         </h3>
-        <p className="mt-3 text-sm font-medium leading-relaxed text-slate-900">
-          <strong>Hub de pagos:</strong> concentración y procesamiento de pagos del
-          comercio según lo acordado.
+        <p className="mt-2 text-xs font-semibold leading-snug text-slate-900">
+          {PDF_HUB_TAGLINE}
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          {TEXTO_MODELO_COMISION_HUB_AGENTES}
-        </p>
+        <PdfHubPilaresGrid dense />
       </section>
     );
   }
@@ -628,6 +868,18 @@ export function CotizacionPdfClienteDocument({
         }
       : null;
 
+  const setupTarifaStandardResueltoPdf =
+    form.tipoServicioPuntoPago === "hub_pagos" ||
+    form.tipoServicioPuntoPago === "cash_out"
+      ? resolverSetupTarifaStandardPdf(form)
+      : null;
+
+  const cashOutCargoResueltoPdf =
+    form.tipoServicioPuntoPago === "cash_out" &&
+    cashOutCargoMensualEstimado !== null
+      ? resolverCashOutCargoMensualPdf(form, cashOutCargoMensualEstimado)
+      : null;
+
   return (
     <article
       id="cotizacion-cliente-document"
@@ -845,61 +1097,144 @@ export function CotizacionPdfClienteDocument({
           <div className="mt-6 space-y-4">
             <section
               data-pdf-evitar-corte
-              className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+              className="overflow-hidden rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-600 via-indigo-700 to-[#312e81] p-5 text-white shadow-md ring-1 ring-indigo-500/30 sm:p-6"
             >
-              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Set up fee (referencial)
-              </h3>
-              <p className="mt-3 text-3xl font-bold tabular-nums text-slate-900">
-                {formatUsd(SETUP_FEE_HUB_REF_USD)}
-              </p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:flex-row">
+                <div>
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-200">
+                    Set up fee (referencial)
+                  </h3>
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight sm:text-4xl">
+                    {formatUsd(
+                      setupTarifaStandardResueltoPdf?.monto ?? SETUP_FEE_HUB_REF_USD,
+                    )}
+                  </p>
+                  {setupTarifaStandardResueltoPdf !== null &&
+                    setupTarifaStandardResueltoPdf.descuentoPct !== null && (
+                    <p className="mt-2 max-w-sm text-[11px] font-medium leading-snug text-amber-100">
+                      Incluye descuento comercial de{" "}
+                      {formatPct(setupTarifaStandardResueltoPdf.descuentoPct)} sobre el set
+                      up referencial ({formatUsd(setupTarifaStandardResueltoPdf.baseUsd)}).
+                    </p>
+                  )}
+                  <p className="mt-2 max-w-sm text-xs leading-relaxed text-indigo-100">
+                    Activación e integración del hub según alcance acordado con comercial.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-sm sm:min-w-[11rem]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">
+                    Modelo
+                  </p>
+                  <p className="mt-1 text-sm font-semibold leading-snug">
+                    Pagos electrónicos centralizados
+                  </p>
+                </div>
+              </div>
             </section>
+
             <section
               data-pdf-evitar-corte
-              className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+              className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6"
             >
               <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Comisiones (empresas de servicio y comercio)
+                Cómo opera el hub
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                {TEXTO_MODELO_COMISION_HUB_AGENTES}
+              <PdfHubFlujoOperativo />
+            </section>
+
+            <section
+              data-pdf-evitar-corte
+              className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6"
+            >
+              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Comisiones (referencia visual)
+              </h3>
+              <p className="mt-1 text-[11px] leading-snug text-slate-600">
+                Resumen orientativo; el detalle por marca y servicio lo confirma el equipo
+                comercial.
               </p>
-              <p className="mt-3 text-xs text-slate-500">
-                Promedios y ejemplos orientativos; cotizador en línea próximo para mayor
-                precisión.
-              </p>
+              <PdfHubTarjetasComision />
+              <ul className="mt-4 space-y-1.5 text-[10px] leading-relaxed text-slate-600">
+                <li className="flex gap-2">
+                  <span className="font-bold text-indigo-600">·</span>
+                  <span>
+                    Las empresas de servicio liquidan a Punto Pago; Punto Pago comparte
+                    contigo según acuerdo y listado vigente.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-indigo-600">·</span>
+                  <span>
+                    No hay una sola regla para todos: parte en % sobre monto y parte en
+                    centavos por transacción (ej. recargas móviles ~2% en algunos casos).
+                  </span>
+                </li>
+              </ul>
             </section>
           </div>
         )}
 
         {form.tipoServicioPuntoPago === "cash_out" &&
-          cashOutCargoMensualEstimado !== null && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          cashOutCargoMensualEstimado !== null &&
+          setupTarifaStandardResueltoPdf &&
+          cashOutCargoResueltoPdf && (
+            <div className="mt-6 space-y-4">
               <section
                 data-pdf-evitar-corte
-                className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+                className="overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-r from-slate-800 to-slate-900 p-5 text-white shadow-sm sm:p-6"
               >
-                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Volumen mensual (desembolsos)
+                <h3 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+                  Set up fee (referencial)
                 </h3>
-                <p className="mt-3 text-2xl font-bold tabular-nums text-slate-900">
-                  {formatUsd(volumenCashOutUsd)}
+                <p className="mt-2 text-2xl font-bold tabular-nums sm:text-3xl">
+                  {formatUsd(setupTarifaStandardResueltoPdf.monto)}
                 </p>
+                {setupTarifaStandardResueltoPdf.descuentoPct !== null ? (
+                  <p className="mt-2 text-[11px] font-medium text-amber-100/95">
+                    Descuento {formatPct(setupTarifaStandardResueltoPdf.descuentoPct)} sobre
+                    tarifa referencial ({formatUsd(setupTarifaStandardResueltoPdf.baseUsd)}).
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-300">
+                    Misma referencia de activación que otras líneas Punto Pago; confirma
+                    comercial.
+                  </p>
+                )}
               </section>
-              <section
-                data-pdf-evitar-corte
-                className="rounded-2xl border border-brand/25 bg-gradient-to-br from-white to-brand/[0.06] p-6 shadow-sm ring-1 ring-brand/15"
-              >
-                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">
-                  Cargo referencial al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}%)
-                </h3>
-                <p className="mt-3 text-2xl font-bold tabular-nums text-brand">
-                  {formatUsd(cashOutCargoMensualEstimado)}
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  Punto Pago cobra por cada desembolso según acuerdo comercial.
-                </p>
-              </section>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <section
+                  data-pdf-evitar-corte
+                  className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+                >
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Volumen mensual (desembolsos)
+                  </h3>
+                  <p className="mt-3 text-2xl font-bold tabular-nums text-slate-900">
+                    {formatUsd(volumenCashOutUsd)}
+                  </p>
+                </section>
+                <section
+                  data-pdf-evitar-corte
+                  className="rounded-2xl border border-brand/25 bg-gradient-to-br from-white to-brand/[0.06] p-6 shadow-sm ring-1 ring-brand/15"
+                >
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">
+                    Cargo referencial al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}%)
+                  </h3>
+                  <p className="mt-3 text-2xl font-bold tabular-nums text-brand">
+                    {formatUsd(cashOutCargoResueltoPdf.monto)}
+                  </p>
+                  {cashOutCargoResueltoPdf.descuentoPct !== null ? (
+                    <p className="mt-2 text-[11px] font-medium text-amber-800/95">
+                      Incluye descuento de{" "}
+                      {formatPct(cashOutCargoResueltoPdf.descuentoPct)} sobre el cargo
+                      calculado ({formatUsd(cashOutCargoResueltoPdf.baseUsd)}).
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-sm text-slate-600">
+                    Punto Pago cobra por cada desembolso según acuerdo comercial.
+                  </p>
+                </section>
+              </div>
             </div>
           )}
 

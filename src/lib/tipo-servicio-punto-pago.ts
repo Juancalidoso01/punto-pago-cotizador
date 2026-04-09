@@ -40,6 +40,44 @@ export const TIPOS_SERVICIO_PUNTO_PAGO: {
 /** Set up fee referencial Hub de pagos (USD); Agentes no aplican set up */
 export const SETUP_FEE_HUB_REF_USD = 5000;
 
+/** Línea de valor principal del Hub (PDF y bloque alcance; tono puntopago.net/business/paymentshub) */
+export const PDF_HUB_TAGLINE =
+  "Interconexión sencilla para banca en línea y fintech: integra el portafolio Punto Pago y atrae clientes a tu canal digital.";
+
+/**
+ * Pilares del producto (mensaje alineado al sitio corporativo; PDF en formato gráfico).
+ */
+export const HUB_PAGOS_PILARES_PDF: readonly { titulo: string; resumen: string }[] = [
+  {
+    titulo: "Centralización de pagos",
+    resumen: "Cobros en un solo punto",
+  },
+  {
+    titulo: "Gestión de la liquidez",
+    resumen: "Control del flujo de caja",
+  },
+  {
+    titulo: "Automatización a proveedores",
+    resumen: "Pagos programados",
+  },
+  {
+    titulo: "Automatización de mensajes",
+    resumen: "Comunicación al cliente",
+  },
+  {
+    titulo: "Amplio portafolio",
+    resumen: "Muchas marcas y servicios",
+  },
+] as const;
+
+/** Referencias compactas para tarjetas del PDF (no sustituyen al texto largo en cotizador/Sheets) */
+export const HUB_PDF_TARJETAS_COMISION: readonly { titulo: string; valor: string }[] = [
+  { titulo: "Referencia al comercio", valor: "~USD 0,30 / pago" },
+  { titulo: "Esquema", valor: "% y/o centavos" },
+  { titulo: "Liquidación", valor: "Marca → Punto Pago → tú" },
+  { titulo: "Cierre comercial", valor: "Equipo Punto Pago" },
+] as const;
+
 /**
  * Modelo de comisiones Hub / Agentes: marcas/empresas de servicio liquidan a Punto Pago;
  * Punto Pago comparte con el comercio. Esquema mixto (% vs centavos por pago); promedio orientativo.

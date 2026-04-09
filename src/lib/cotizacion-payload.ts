@@ -20,6 +20,10 @@ import {
 } from "@/lib/cotizacion-kioscos-montos";
 import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
 import {
+  resolverCashOutCargoMensualPdf,
+  resolverSetupTarifaStandardPdf,
+} from "@/lib/cotizacion-tarifa-standard-montos";
+import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
   TEXTO_ACCESO_AGENTES_CREDENCIALES,
@@ -105,9 +109,13 @@ export function buildCotizacionPayload(
   }
 
   if (form.tipoServicioPuntoPago === "hub_pagos") {
+    const setupR = resolverSetupTarifaStandardPdf(form);
     return {
       ...base,
       setupFeeHubRefUsd: SETUP_FEE_HUB_REF_USD,
+      setupFeeHubBaseReferencialUsd: setupR.baseUsd,
+      setupFeeHubMostradoPdfUsd: setupR.monto,
+      descuentoPctSetupTarifaStandard: setupR.descuentoPct ?? 0,
       notaComisiones: TEXTO_MODELO_COMISION_HUB_AGENTES,
     };
   }
@@ -123,13 +131,21 @@ export function buildCotizacionPayload(
   if (form.tipoServicioPuntoPago === "cash_out") {
     const vol = parseMontoUsd(form.volumenCashOutMensualUsd) ?? 0;
     const cargoEst = vol * (CASH_OUT_CARGO_CLIENTE_PCT / 100);
+    const setupR = resolverSetupTarifaStandardPdf(form);
+    const cargoR = resolverCashOutCargoMensualPdf(form, cargoEst);
     return {
       ...base,
       setupFeeHubRefUsd: SETUP_FEE_HUB_REF_USD,
+      setupFeeHubBaseReferencialUsd: setupR.baseUsd,
+      setupFeeHubMostradoPdfUsd: setupR.monto,
+      descuentoPctSetupTarifaStandard: setupR.descuentoPct ?? 0,
       volumenCashOutMensualUsdNum: vol,
       cargoClienteCashOutPct: CASH_OUT_CARGO_CLIENTE_PCT,
+      cargoMensualBaseReferencialUsd: cargoR.baseUsd,
       cargoMensualEstimadoUsd: cargoEst,
-      cargoMensualEstimadoFmt: formatUsd(cargoEst),
+      cargoMensualMostradoPdfUsd: cargoR.monto,
+      descuentoPctCashOutCargoMensual: cargoR.descuentoPct ?? 0,
+      cargoMensualEstimadoFmt: formatUsd(cargoR.monto),
       nota:
         "Cargo referencial 3% al cliente sobre volumen mensual indicado; Punto Pago cobra por desembolso según acuerdo.",
     };
