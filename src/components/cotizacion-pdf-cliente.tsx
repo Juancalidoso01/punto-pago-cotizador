@@ -33,7 +33,6 @@ import {
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   HUB_PAGOS_PILARES_PDF,
-  HUB_PDF_TARJETAS_COMISION,
   PDF_AGENTES_BADGE_COOPERATIVAS,
   PDF_AGENTES_SUBTITULO,
   PDF_HUB_TAGLINE,
@@ -67,19 +66,25 @@ function IconoPdfAgente({
 
 const DIAS_VALIDEZ_COTIZACION = 15;
 
-const hubPilarIconIds = [
-  "central",
-  "liquidez",
-  "proveedores",
+type SvgHubPilarIconName =
+  | "central"
+  | "liquidez"
+  | "proveedores"
+  | "mensajes"
+  | "portafolio";
+
+/** Un icono por cada fila de HUB_PAGOS_PILARES_PDF (3). */
+const hubPilarIconIds: readonly SvgHubPilarIconName[] = [
   "mensajes",
   "portafolio",
-] as const;
+  "central",
+];
 
 function SvgHubPilarIcon({
   id,
   className = "h-9 w-9",
 }: {
-  id: (typeof hubPilarIconIds)[number];
+  id: SvgHubPilarIconName;
   className?: string;
 }) {
   const stroke = "currentColor";
@@ -203,26 +208,19 @@ function SvgHubPilarIcon({
   }
 }
 
-function PdfHubPilaresGrid({ dense }: { dense?: boolean }) {
-  const pad = dense ? "p-2.5" : "p-3";
-  const tituloCls = dense
-    ? "text-[10px] font-semibold leading-tight text-slate-900"
-    : "text-[11px] font-semibold leading-tight text-slate-900";
-  const resCls = dense
-    ? "mt-1 text-[9px] leading-snug text-slate-600"
-    : "mt-1 text-[10px] leading-snug text-slate-600";
+function PdfHubPilaresGrid() {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 print:grid-cols-5">
+    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 print:grid-cols-3">
       {HUB_PAGOS_PILARES_PDF.map((p, i) => (
         <div
           key={p.titulo}
-          className={`rounded-xl border border-indigo-200/70 bg-gradient-to-b from-indigo-50/90 to-white text-center shadow-sm ring-1 ring-indigo-100/60 ${pad}`}
+          className="rounded-xl border border-slate-200 bg-slate-50/90 p-4 text-center shadow-sm ring-1 ring-slate-100"
         >
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100">
-            <SvgHubPilarIcon id={hubPilarIconIds[i]} className="h-5 w-5" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200">
+            <SvgHubPilarIcon id={hubPilarIconIds[i]} className="h-6 w-6" />
           </div>
-          <p className={`mt-2 ${tituloCls}`}>{p.titulo}</p>
-          <p className={resCls}>{p.resumen}</p>
+          <p className="mt-3 text-sm font-bold leading-snug text-slate-900">{p.titulo}</p>
+          <p className="mt-2 text-xs leading-relaxed text-slate-700">{p.resumen}</p>
         </div>
       ))}
     </div>
@@ -231,76 +229,75 @@ function PdfHubPilaresGrid({ dense }: { dense?: boolean }) {
 
 function PdfHubFlujoOperativo() {
   const paso =
-    "flex min-w-0 flex-1 flex-col items-center rounded-xl border border-slate-200/90 bg-white px-2 py-3 text-center shadow-sm ring-1 ring-slate-100";
+    "flex min-w-0 flex-1 flex-col items-center rounded-xl border border-slate-200 bg-white px-3 py-4 text-center shadow-sm ring-1 ring-slate-100";
   const flecha =
-    "hidden shrink-0 self-center text-lg font-bold text-indigo-300 sm:block print:block";
+    "hidden shrink-0 self-center text-xl font-bold text-indigo-400 sm:block print:block";
   return (
     <div
-      className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-1 print:flex-row"
+      className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-2 print:flex-row"
       aria-label="Flujo del hub"
     >
       <div className={paso}>
-        <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">
+        <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">
           1
         </span>
-        <p className="mt-1 text-[11px] font-semibold text-slate-900">
-          Tu canal digital
-        </p>
-        <p className="mt-0.5 text-[9px] leading-snug text-slate-600">
-          Web o banca en línea
+        <p className="mt-2 text-sm font-bold text-slate-900">Tu canal (marca blanca)</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-700">
+          App, web o banca del cliente
         </p>
       </div>
       <div className={flecha} aria-hidden>
         →
       </div>
       <div
-        className={`${paso} border-indigo-200/80 bg-gradient-to-b from-indigo-50/80 to-white ring-indigo-100`}
+        className={`${paso} border-indigo-200 bg-indigo-50/60 ring-indigo-100`}
       >
-        <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">
+        <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">
           2
         </span>
-        <p className="mt-1 text-[11px] font-semibold text-slate-900">
-          Hub Punto Pago
-        </p>
-        <p className="mt-0.5 text-[9px] leading-snug text-slate-600">
-          Procesa y concentra pagos
+        <p className="mt-2 text-sm font-bold text-slate-900">Hub Punto Pago</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-700">
+          Enlaza tu canal con la red de operadores
         </p>
       </div>
       <div className={flecha} aria-hidden>
         →
       </div>
       <div className={paso}>
-        <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">
+        <span className="text-xs font-bold uppercase tracking-wide text-indigo-700">
           3
         </span>
-        <p className="mt-1 text-[11px] font-semibold text-slate-900">
-          Marcas y servicios
-        </p>
-        <p className="mt-0.5 text-[9px] leading-snug text-slate-600">
-          Energía, agua, móvil y más
+        <p className="mt-2 text-sm font-bold text-slate-900">Operadores de cobro</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-700">
+          Servicios que el usuario ya conoce (luz, móvil, etc.)
         </p>
       </div>
     </div>
   );
 }
 
-function PdfHubTarjetasComision() {
+function PdfHubBloqueComisiones() {
   return (
-    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 print:grid-cols-4">
-      {HUB_PDF_TARJETAS_COMISION.map((t) => (
-        <div
-          key={t.titulo}
-          className="rounded-xl border border-slate-200/90 bg-gradient-to-br from-slate-50 to-white p-3 text-center shadow-sm ring-1 ring-slate-100"
-        >
-          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
-            {t.titulo}
-          </p>
-          <p className="mt-1.5 text-sm font-bold tabular-nums leading-tight text-slate-900">
-            {t.valor}
-          </p>
-        </div>
-      ))}
-    </div>
+    <>
+      <p className="mt-3 text-sm leading-relaxed text-slate-800">
+        El cliente paga desde <strong>tu canal</strong>. Por detrás se utilizan los{" "}
+        <strong>mismos operadores y convenios</strong> del ecosistema Punto Pago: no hace
+        falta que tu institución negocie con cada empresa de servicios por separado.
+      </p>
+      <p className="mt-3 text-sm leading-relaxed text-slate-800">
+        Los operadores liquidan a Punto Pago y <strong>Punto Pago te participa</strong>{" "}
+        según acuerdo. La forma de comisión depende del servicio (% sobre el monto o
+        centavos por pago).
+      </p>
+      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <p className="text-sm font-semibold text-slate-900">
+          Referencia de magnitud: ~USD 0,30 por pago al comercio (varía por servicio).
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+          Las cifras finales las confirma el equipo comercial.
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -370,15 +367,15 @@ function BloqueAlcanceServicio({
     return (
       <section
         data-pdf-evitar-corte
-        className="mt-4 overflow-hidden rounded-2xl border border-indigo-200/50 bg-gradient-to-br from-white via-indigo-50/30 to-white p-4 shadow-sm ring-1 ring-indigo-100/60 sm:p-5"
+        className="mt-4 overflow-hidden rounded-2xl border border-slate-300 bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6"
       >
-        <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-500">
+        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-slate-800">
           Alcance del servicio · Hub de pagos
         </h3>
-        <p className="mt-2 text-xs font-semibold leading-snug text-slate-900">
+        <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-900">
           {PDF_HUB_TAGLINE}
         </p>
-        <PdfHubPilaresGrid dense />
+        <PdfHubPilaresGrid />
       </section>
     );
   }
@@ -1117,16 +1114,16 @@ export function CotizacionPdfClienteDocument({
                       up referencial ({formatUsd(setupTarifaStandardResueltoPdf.baseUsd)}).
                     </p>
                   )}
-                  <p className="mt-2 max-w-sm text-xs leading-relaxed text-indigo-100">
+                  <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/95">
                     Activación e integración del hub según alcance acordado con comercial.
                   </p>
                 </div>
-                <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-sm sm:min-w-[11rem]">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">
-                    Modelo
+                <div className="rounded-xl border border-white/25 bg-white/15 px-4 py-3 text-center backdrop-blur-sm sm:min-w-[12rem]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-white/90">
+                    Enfoque
                   </p>
-                  <p className="mt-1 text-sm font-semibold leading-snug">
-                    Pagos electrónicos centralizados
+                  <p className="mt-1.5 text-sm font-semibold leading-snug text-white">
+                    Marca blanca · Servicios en tu canal
                   </p>
                 </div>
               </div>
@@ -1134,42 +1131,28 @@ export function CotizacionPdfClienteDocument({
 
             <section
               data-pdf-evitar-corte
-              className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6"
+              className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6"
             >
-              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-slate-800">
                 Cómo opera el hub
               </h3>
+              <p className="mt-1 text-xs text-slate-600">
+                Tres pasos: tu marca, la conexión técnica y los operadores de cobro.
+              </p>
               <PdfHubFlujoOperativo />
             </section>
 
             <section
               data-pdf-evitar-corte
-              className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6"
+              className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6"
             >
-              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Comisiones (referencia visual)
+              <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-slate-800">
+                Comisiones (orientativas)
               </h3>
-              <p className="mt-1 text-[11px] leading-snug text-slate-600">
-                Resumen orientativo; el detalle por marca y servicio lo confirma el equipo
-                comercial.
+              <p className="mt-1 text-xs font-medium text-slate-600">
+                Cómo se reparte el ingreso cuando el usuario paga en tu canal.
               </p>
-              <PdfHubTarjetasComision />
-              <ul className="mt-4 space-y-1.5 text-[10px] leading-relaxed text-slate-600">
-                <li className="flex gap-2">
-                  <span className="font-bold text-indigo-600">·</span>
-                  <span>
-                    Las empresas de servicio liquidan a Punto Pago; Punto Pago comparte
-                    contigo según acuerdo y listado vigente.
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="font-bold text-indigo-600">·</span>
-                  <span>
-                    No hay una sola regla para todos: parte en % sobre monto y parte en
-                    centavos por transacción (ej. recargas móviles ~2% en algunos casos).
-                  </span>
-                </li>
-              </ul>
+              <PdfHubBloqueComisiones />
             </section>
           </div>
         )}
