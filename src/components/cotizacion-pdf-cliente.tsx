@@ -1029,8 +1029,8 @@ export function CotizacionPdfClienteDocument({
                     <p className="mt-1.5 text-xs font-medium leading-snug text-slate-900 sm:mt-2 sm:text-sm sm:leading-relaxed">
                       {etiquetaAcuerdoPagoSetup ?? (
                         <span className="font-normal text-slate-500">
-                          Indicar en el cotizador la forma de pago del set up (sección
-                          7).
+                          Completar con el equipo comercial la forma de pago del set up
+                          acordada.
                         </span>
                       )}
                     </p>
@@ -1044,8 +1044,8 @@ export function CotizacionPdfClienteDocument({
                     Comisión de servicio (referencial)
                   </h3>
                   <p className="mt-1 text-[11px] text-slate-600 sm:mt-1.5 sm:text-xs">
-                    Estimación con base en el volumen y el ticket indicados en el
-                    cotizador.
+                    Estimación con base en el volumen y el ticket indicados en esta
+                    propuesta.
                   </p>
                   {notaTarifaKioscosPdf ? (
                     <p className="mt-1.5 text-[10px] font-medium text-amber-900/90 sm:text-[11px]">

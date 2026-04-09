@@ -129,12 +129,12 @@ export function notaTarifaComercialKioscosDoc(form: CotizacionForm): string | nu
   if (form.kioscosTarifaComercialModo === "pct") {
     const p = parsePorcentajeTarifa(form.kioscosTarifaComercialPct);
     if (p === null) return null;
-    return `Tarifa comercial indicada para esta propuesta: ${formatPct(p)} sobre cada venta (sustituye la referencia automática del cotizador).`;
+    return `Tarifa comercial indicada para esta propuesta: ${formatPct(p)} sobre cada venta (en sustitución de la tarifa referencial estándar del segmento).`;
   }
   if (form.kioscosTarifaComercialModo === "fijo_txn") {
     const u = parseMontoUsd(form.kioscosTarifaComercialFijoTxnUsd);
     if (u === null) return null;
-    return `Tarifa comercial indicada para esta propuesta: ${formatUsd(u)} por transacción (sustituye la referencia automática del cotizador).`;
+    return `Tarifa comercial indicada para esta propuesta: ${formatUsd(u)} por transacción (en sustitución de la tarifa referencial estándar del segmento).`;
   }
   return null;
 }

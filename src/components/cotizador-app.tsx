@@ -1095,8 +1095,8 @@ export function CotizadorApp() {
                     {hayTarifaComercialPersonalizadaActiva(form) ? (
                       <>
                         Los importes anteriores usan la{" "}
-                        <strong>tarifa indicada en la sección 6</strong> (sustituye la
-                        referencia automática del segmento).{" "}
+                        <strong>tarifa indicada en la sección 6</strong> (en sustitución
+                        de la tarifa referencial estándar del segmento).{" "}
                       </>
                     ) : null}
                     {textoExplicativoComision(resultadoComisionUiKioscos!)}
@@ -1117,15 +1117,15 @@ export function CotizadorApp() {
               6. Tarifa comercial y descuentos (opcional)
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Por defecto el cotizador usa la política del segmento y el ticket/volumen de
-              la sección 4. Puedes <strong>sustituir la tarifa</strong> que verá el cliente
+              Por defecto se usa la política del segmento y el ticket/volumen de la
+              sección 4. Puedes <strong>sustituir la tarifa</strong> que verá el cliente
               (% sobre venta o USD por operación) y, aparte, aplicar{" "}
               <strong>descuentos %</strong> sobre implementación y sobre la comisión/costo
               por txn ya calculados con esa tarifa. Vacío = sin ajuste.
             </p>
             <div className="mt-4 rounded-2xl border-2 border-brand/45 bg-gradient-to-br from-brand/[0.08] via-white to-slate-50/90 p-4 shadow-sm ring-1 ring-brand/20 sm:p-5">
               <p className="text-sm font-semibold text-slate-900">
-                Tarifa mostrada al cliente (sustituye la referencia automática)
+                Tarifa mostrada al cliente (sustituye la tarifa referencial estándar)
               </p>
               <p className="mt-1 text-xs text-slate-600">
                 Si eliges % o monto fijo, el PDF y la sección 5 usan esa base antes de
@@ -1140,7 +1140,7 @@ export function CotizadorApp() {
                     checked={form.kioscosTarifaComercialModo === ""}
                     onChange={() => setField("kioscosTarifaComercialModo", "")}
                   />
-                  Usar referencia del cotizador (segmento + sección 4)
+                  Usar tarifa referencial estándar (segmento y sección 4)
                 </label>
                 <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
                   <input
@@ -1856,8 +1856,9 @@ export function CotizadorApp() {
                 <p className="mt-2 text-xs text-slate-500">
                   {hayTarifaComercialPersonalizadaActiva(form) ? (
                     <>
-                      Incluye la <strong>tarifa indicada en el cotizador</strong> (sección
-                      6). Punto Pago factura al comercio según lo acordado.
+                      Incluye la{" "}
+                      <strong>tarifa comercial acordada para esta propuesta</strong>. Punto
+                      Pago factura al comercio según lo acordado.
                     </>
                   ) : resultadoComision.comisionSoloPorcentaje ? (
                     <>
@@ -2051,7 +2052,7 @@ export function CotizadorApp() {
                     ? `\n\nAgentes: cotización orientativa; condiciones y comisiones con equipo comercial.\n`
                     : resultadoComision && rM
                       ? hayTarifaComercialPersonalizadaActiva(form)
-                        ? `\n\nComisión (referencial — tarifa indicada en cotizador, sección 6):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
+                        ? `\n\nComisión (referencial — tarifa comercial acordada para esta propuesta):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
                         : rM.comisionSoloPorcentaje
                           ? `\n\nComisión (referencial — política porcentaje del segmento):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- ${textoExplicativoComision(rM)}`
                           : `\n\nComisión recomendada (referencial; ${formatPct(rM.pct)} vs ${formatUsd(rM.fijoUsd)} por txn):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
