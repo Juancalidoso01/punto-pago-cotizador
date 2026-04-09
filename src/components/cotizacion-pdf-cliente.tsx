@@ -30,6 +30,7 @@ import {
 } from "@/lib/alcance-servicio-kioscos";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
+  PDF_AGENTES_BADGE_COOPERATIVAS,
   PDF_AGENTES_SUBTITULO,
   SETUP_FEE_HUB_REF_USD,
   TEXTO_MODELO_COMISION_HUB_AGENTES,
@@ -188,6 +189,11 @@ function BloqueAlcanceServicio({
           Agentes Punto Pago
         </p>
         <p className="mt-1 text-xs text-slate-500">{PDF_AGENTES_SUBTITULO}</p>
+        <div className="mt-3">
+          <span className="inline-flex items-center rounded-full border border-brand/30 bg-gradient-to-r from-brand/[0.12] to-brand/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-brand">
+            {PDF_AGENTES_BADGE_COOPERATIVAS}
+          </span>
+        </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 print:grid-cols-3">
           <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white p-4 text-center shadow-sm ring-1 ring-emerald-100/80">
@@ -228,6 +234,12 @@ function BloqueAlcanceServicio({
         </div>
         <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
           Cifras orientativas para Panamá. Tasas y listado final con el equipo comercial.
+        </p>
+        <p className="mt-4 rounded-xl border border-slate-100 bg-slate-50/90 px-4 py-3 text-center text-[12px] leading-snug text-slate-700">
+          <span className="font-semibold text-slate-900">
+            ¿Llevas servicios a comunidades sin kiosco?
+          </span>{" "}
+          Con Agentes amplías tu alcance y cobras con el respaldo de Punto Pago.
         </p>
         </section>
 
@@ -307,15 +319,18 @@ function BloqueAlcanceServicio({
           <li className="flex gap-2">
             <span className="font-semibold text-slate-900">Servicios.</span>
             <span>
-              Pagos a marcas y empresas de servicios (luz, agua, telefonía, facturas y
-              recargas; p. ej. ENSA, Naturgy).
+              Pagos a marcas y comercios de servicio (luz, agua, telefonía, facturas y
+              recargas; p. ej. ENSA, Naturgy). Pensado para zonas sin kioscos Punto Pago; muy
+              usado por cooperativas en Panamá.
             </span>
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-slate-900">Reglas.</span>
             <span>
-              Mezcla de % y centavos por transacción según listado; no es una sola tasa para
-              todo.
+              La liquidación y pago de comisiones al agente depende del comercio o servicio al
+              que el usuario paga: puede ser por comisión % sobre el monto o por pagos fijos en
+              centavos por transacción. Los montos son una idea orientativa; pueden variar según
+              listado y acuerdo.
             </span>
           </li>
         </ul>
@@ -624,11 +639,14 @@ export function CotizacionPdfClienteDocument({
               />
             </div>
             <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-[1.65rem]">
-              Cotización comercial
+              Tu propuesta Punto Pago
             </h1>
-            <p className="mt-2 max-w-md text-sm leading-relaxed text-white/85">
-              Resumen referencial en USD para el cliente. Montos orientativos; la
-              propuesta definitiva se formaliza con el equipo comercial.
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/90">
+              <span className="font-medium text-white">
+                Pagos y cobros en Panamá con respaldo y tecnología.
+              </span>{" "}
+              Este resumen en USD es referencial; te acompañamos a cerrar el acuerdo que mejor
+              se adapte a tu operación.
             </p>
           </div>
           <div className="shrink-0 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm backdrop-blur-sm">
@@ -835,7 +853,12 @@ export function CotizacionPdfClienteDocument({
           data-pdf-evitar-corte
           className="mt-8 border-t border-slate-200 pt-6 text-xs leading-relaxed text-slate-500"
         >
-          <p>
+          <p className="text-sm font-semibold text-slate-800">¿Siguiente paso?</p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600">
+            Hable con un asesor comercial de Punto Pago para cerrar condiciones, activar su
+            operación y resolver dudas. Estamos para acompañarle.
+          </p>
+          <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
             Cifras referenciales. Vigencia, riesgo, impuestos y condiciones finales se
             confirman con el equipo comercial de Punto Pago.
           </p>
