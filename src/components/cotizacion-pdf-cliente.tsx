@@ -874,7 +874,11 @@ export function CotizacionPdfClienteDocument({
   const cashOutCargoResueltoPdf =
     form.tipoServicioPuntoPago === "cash_out" &&
     cashOutCargoMensualEstimado !== null
-      ? resolverCashOutCargoMensualPdf(form, cashOutCargoMensualEstimado)
+      ? resolverCashOutCargoMensualPdf(
+          form,
+          volumenCashOutUsd,
+          CASH_OUT_CARGO_CLIENTE_PCT,
+        )
       : null;
 
   return (
@@ -1201,16 +1205,28 @@ export function CotizacionPdfClienteDocument({
                   className="rounded-2xl border border-brand/25 bg-gradient-to-br from-white to-brand/[0.06] p-6 shadow-sm ring-1 ring-brand/15"
                 >
                   <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">
-                    Cargo referencial al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}%)
+                    {cashOutCargoResueltoPdf.descuentoPct !== null &&
+                    cashOutCargoResueltoPdf.cashOutTasaEfectivaPct !== undefined ? (
+                      <>
+                        Cargo estimado (tasa efectiva{" "}
+                        {formatPct(cashOutCargoResueltoPdf.cashOutTasaEfectivaPct)} sobre
+                        volumen)
+                      </>
+                    ) : (
+                      <>Cargo referencial al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}%)</>
+                    )}
                   </h3>
                   <p className="mt-3 text-2xl font-bold tabular-nums text-brand">
                     {formatUsd(cashOutCargoResueltoPdf.monto)}
                   </p>
                   {cashOutCargoResueltoPdf.descuentoPct !== null ? (
                     <p className="mt-2 text-[11px] font-medium text-amber-800/95">
-                      Incluye descuento de{" "}
-                      {formatPct(cashOutCargoResueltoPdf.descuentoPct)} sobre el cargo
-                      calculado ({formatUsd(cashOutCargoResueltoPdf.baseUsd)}).
+                      Descuento comercial de{" "}
+                      {formatPct(cashOutCargoResueltoPdf.descuentoPct)} sobre la tasa
+                      referencial ({formatPct(CASH_OUT_CARGO_CLIENTE_PCT)}): tasa efectiva{" "}
+                      {formatPct(cashOutCargoResueltoPdf.cashOutTasaEfectivaPct!)}. Con la
+                      tasa {formatPct(CASH_OUT_CARGO_CLIENTE_PCT)} sin descuento, el cargo
+                      mensual sería {formatUsd(cashOutCargoResueltoPdf.baseUsd)}.
                     </p>
                   ) : null}
                   <p className="mt-2 text-sm text-slate-600">

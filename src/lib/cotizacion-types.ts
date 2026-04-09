@@ -67,7 +67,10 @@ export type CotizacionForm = {
    * (USD 5.000).
    */
   descuentoPctSetupTarifaStandard: string;
-  /** Cash out: descuento % opcional sobre el cargo mensual estimado (referencial). */
+  /**
+   * Cash out: descuento % sobre la **tasa** referencial de cargo (p. ej. 3 %), no sobre
+   * el monto USD mensual. Ej.: 10 % de descuento → tasa efectiva 2,7 % sobre volumen.
+   */
   descuentoPctCashOutCargoMensual: string;
 };
 

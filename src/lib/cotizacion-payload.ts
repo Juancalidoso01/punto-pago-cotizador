@@ -130,9 +130,8 @@ export function buildCotizacionPayload(
 
   if (form.tipoServicioPuntoPago === "cash_out") {
     const vol = parseMontoUsd(form.volumenCashOutMensualUsd) ?? 0;
-    const cargoEst = vol * (CASH_OUT_CARGO_CLIENTE_PCT / 100);
     const setupR = resolverSetupTarifaStandardPdf(form);
-    const cargoR = resolverCashOutCargoMensualPdf(form, cargoEst);
+    const cargoR = resolverCashOutCargoMensualPdf(form, vol);
     return {
       ...base,
       setupFeeHubRefUsd: SETUP_FEE_HUB_REF_USD,
@@ -141,8 +140,10 @@ export function buildCotizacionPayload(
       descuentoPctSetupTarifaStandard: setupR.descuentoPct ?? 0,
       volumenCashOutMensualUsdNum: vol,
       cargoClienteCashOutPct: CASH_OUT_CARGO_CLIENTE_PCT,
+      cargoClienteCashOutTasaEfectivaPct:
+        cargoR.cashOutTasaEfectivaPct ?? CASH_OUT_CARGO_CLIENTE_PCT,
       cargoMensualBaseReferencialUsd: cargoR.baseUsd,
-      cargoMensualEstimadoUsd: cargoEst,
+      cargoMensualEstimadoUsd: cargoR.baseUsd,
       cargoMensualMostradoPdfUsd: cargoR.monto,
       descuentoPctCashOutCargoMensual: cargoR.descuentoPct ?? 0,
       cargoMensualEstimadoFmt: formatUsd(cargoR.monto),

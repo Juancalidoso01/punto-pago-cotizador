@@ -1,11 +1,17 @@
 import type { CotizacionForm } from "@/lib/cotizacion-types";
 import { parsePorcentajeDescuento } from "@/lib/cotizacion-kioscos-montos";
-import { SETUP_FEE_HUB_REF_USD } from "@/lib/tipo-servicio-punto-pago";
+import {
+  CASH_OUT_CARGO_CLIENTE_PCT,
+  SETUP_FEE_HUB_REF_USD,
+} from "@/lib/tipo-servicio-punto-pago";
 
 export type MontoTarifaStdResuelto = {
   monto: number;
   baseUsd: number;
   descuentoPct: number | null;
+  /** Cash out: tasa % sobre volumen antes y después del descuento sobre la tasa */
+  cashOutTasaReferenciaPct?: number;
+  cashOutTasaEfectivaPct?: number;
 };
 
 function aplicarDescuento(
@@ -29,12 +35,45 @@ export function resolverSetupTarifaStandardPdf(
   return { monto, baseUsd: base, descuentoPct };
 }
 
-/** Cargo mensual cash out (base ya calculada) con descuento % opcional */
+/**
+ * Cash out: el descuento % se aplica sobre la **tasa referencial** (p. ej. 3 %),
+ * no sobre el USD mensual. Ej.: 10 % de descuento sobre 3 % → tasa efectiva 2,7 %;
+ * cargo = volumen × (tasa efectiva / 100).
+ */
 export function resolverCashOutCargoMensualPdf(
   form: CotizacionForm,
-  cargoBaseUsd: number,
+  volumenUsd: number,
+  referenciaPct: number = CASH_OUT_CARGO_CLIENTE_PCT,
 ): MontoTarifaStdResuelto {
-  const pct = parsePorcentajeDescuento(form.descuentoPctCashOutCargoMensual);
-  const { monto, descuentoPct } = aplicarDescuento(cargoBaseUsd, pct);
-  return { monto, baseUsd: cargoBaseUsd, descuentoPct };
+  const baseUsd =
+    volumenUsd > 0
+      ? Math.round(volumenUsd * (referenciaPct / 100) * 100) / 100
+      : 0;
+
+  const descSobreTasa = parsePorcentajeDescuento(
+    form.descuentoPctCashOutCargoMensual,
+  );
+
+  if (descSobreTasa === null || volumenUsd <= 0) {
+    return {
+      monto: baseUsd,
+      baseUsd,
+      descuentoPct: null,
+      cashOutTasaReferenciaPct: referenciaPct,
+      cashOutTasaEfectivaPct: referenciaPct,
+    };
+  }
+
+  const tasaEfectiva =
+    Math.round(referenciaPct * (1 - descSobreTasa / 100) * 100) / 100;
+  const monto =
+    Math.round(volumenUsd * (tasaEfectiva / 100) * 100) / 100;
+
+  return {
+    monto,
+    baseUsd,
+    descuentoPct: descSobreTasa,
+    cashOutTasaReferenciaPct: referenciaPct,
+    cashOutTasaEfectivaPct: tasaEfectiva,
+  };
 }
