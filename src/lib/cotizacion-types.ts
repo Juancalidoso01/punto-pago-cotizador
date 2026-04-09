@@ -46,6 +46,13 @@ export type CotizacionForm = {
   condicionesComerciales: string;
   /** Obligatorio para generar PDF / registrar; se muestra en la cotización al cliente */
   nombreVendedor: string;
+  /**
+   * Botón en kioscos: monto opcional en USD (texto) que reemplaza al total de integración
+   * calculado en el PDF al cliente.
+   */
+  kioscosMontoImplementacionPersonalizadoUsd: string;
+  /** Botón en kioscos: comisión mensual estimada mostrada en PDF si se indica monto válido */
+  kioscosComisionMensualPersonalizadaUsd: string;
 };
 
 /** Opciones de pago del set up (referencial; se acuerda con comercial) */
@@ -103,5 +110,7 @@ export function createEmptyForm(): CotizacionForm {
     observaciones: "",
     condicionesComerciales: defaultCondiciones,
     nombreVendedor: "",
+    kioscosMontoImplementacionPersonalizadoUsd: "",
+    kioscosComisionMensualPersonalizadaUsd: "",
   };
 }

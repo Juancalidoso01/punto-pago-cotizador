@@ -11,6 +11,10 @@ import {
   buscarIndustria,
   type ResultadoPrecioIntegracion,
 } from "@/lib/integracion";
+import {
+  resolverComisionMensualKioscosPdf,
+  resolverMontoImplementacionKioscosPdf,
+} from "@/lib/cotizacion-kioscos-montos";
 import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
@@ -45,6 +49,8 @@ export function buildCotizacionPayload(
   };
 
   if (form.tipoServicioPuntoPago === "kioscos" && resultadoIntegracion && resultadoComision) {
+    const implPdf = resolverMontoImplementacionKioscosPdf(form, resultadoIntegracion);
+    const comPdf = resolverComisionMensualKioscosPdf(form, resultadoComision);
     return {
       ...base,
       modalidad: resultadoIntegracion.resumenModalidad,
@@ -60,6 +66,8 @@ export function buildCotizacionPayload(
       recaudoKioscos: false,
       setupFeeUsd: resultadoIntegracion.precioBaseUsd,
       totalIntegracionUsd: resultadoIntegracion.totalUsd,
+      totalIntegracionMostradoPdfUsd: implPdf.monto,
+      implementacionMontoPersonalizado: implPdf.esPersonalizado,
       ventasMensualesUsd: parseMontoUsd(form.ventasMensualesTotalUsd) ?? 0,
       cantidadVentasMes: parseEnteroPositivo(form.cantidadVentasMensuales) ?? 0,
       politicaComisionCashIn: resultadoComision.comisionSoloPorcentaje
@@ -68,11 +76,14 @@ export function buildCotizacionPayload(
       modeloComisionRecomendado: tituloModeloRecomendado(resultadoComision),
       costoTxnRecomendadoUsd: costoTxnRecomendado(resultadoComision),
       comisionMensualEstUsd: comisionMensualRecomendada(resultadoComision),
+      comisionMensualMostradaPdfUsd: comPdf.monto,
+      comisionMensualPersonalizada: comPdf.esPersonalizado,
       volumenMensualUsd: resultadoComision.volumenMensualUsd,
       costoTxnRecomendadoFmt: formatUsd(costoTxnRecomendado(resultadoComision)),
       comisionMensualEstFmt: formatUsd(
         comisionMensualRecomendada(resultadoComision),
       ),
+      comisionMensualMostradaPdfFmt: formatUsd(comPdf.monto),
       volumenMensualFmt: formatUsd(resultadoComision.volumenMensualUsd),
     };
   }

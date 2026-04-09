@@ -11,12 +11,16 @@ import {
   type CotizacionForm,
 } from "@/lib/cotizacion-types";
 import {
-  comisionMensualRecomendada,
   costoTxnRecomendado,
   formatPct,
   formatUsd,
   type ResultadoComision,
 } from "@/lib/comision";
+import { AlcanceKioscosTextoBloque } from "@/components/alcance-kioscos-texto-bloque";
+import {
+  resolverComisionMensualKioscosPdf,
+  resolverMontoImplementacionKioscosPdf,
+} from "@/lib/cotizacion-kioscos-montos";
 import {
   fechaMasDias,
   formatFechaHoraEmision,
@@ -114,25 +118,7 @@ function BloqueAlcanceServicio({
             </div>
           </div>
         </div>
-        <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-slate-700">
-          <li>
-            <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: tu comercio
-            aparecerá dentro de nuestra app, que tiene más de <strong>150 mil usuarios activos al
-            mes</strong>, y también en nuestra red de kioscos. Esto significa que más personas
-            podrán encontrarte y pagarte fácilmente. En la app, los clientes pueden hacer
-            recargas y pagos usando tarjetas bancarias, incluyendo <strong>Clave</strong>, además
-            de opciones como <strong>Yappy</strong> y <strong>transferencias ACH</strong>. Todo
-            esto sin costos adicionales por estar visible en estos canales.
-          </li>
-          <li>
-            <strong>Bancos y billeteras digitales:</strong> Punto Pago ya tiene acuerdos con
-            bancos y billeteras digitales que permiten a los usuarios pagar servicios
-            directamente desde sus apps o banca en línea. Al integrarte con nosotros, tu comercio
-            se conecta automáticamente a estos canales, sin necesidad de hacer integraciones por
-            separado con cada banco. Esto facilita que más clientes te paguen desde donde ya
-            manejan su dinero, aumentando la cantidad de pagos que puedes recibir.
-          </li>
-        </ul>
+        <AlcanceKioscosTextoBloque />
       </section>
     );
   }
@@ -390,9 +376,14 @@ function BloqueVigencia({ fechaExportacion }: { fechaExportacion: Date | null })
 function TablaComparacionComision({
   r,
   compact = false,
+  comisionMensualResumenUsd,
+  comisionResumenEsPersonalizada = false,
 }: {
   r: ResultadoComision;
   compact?: boolean;
+  /** Monto mostrado en resúmenes (calculado o personalizado por el vendedor) */
+  comisionMensualResumenUsd: number;
+  comisionResumenEsPersonalizada?: boolean;
 }) {
   const mt = compact ? "mt-2" : "mt-4";
   const cell = compact ? "px-3 py-2" : "px-4 py-3";
@@ -442,8 +433,13 @@ function TablaComparacionComision({
             Comisión mensual estimada
           </p>
           <p className={`mt-0.5 font-bold tabular-nums text-brand ${finalAmt}`}>
-            {formatUsd(comisionMensualRecomendada(r))}
+            {formatUsd(comisionMensualResumenUsd)}
           </p>
+          {comisionResumenEsPersonalizada && (
+            <p className="mt-1 text-[10px] font-medium text-amber-800/90">
+              Monto indicado por el asesor para esta cotización.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -576,10 +572,15 @@ function TablaComparacionComision({
           <div className="text-right">
             <p className="text-[11px] text-slate-500">Comisión mensual estimada</p>
             <p className={`font-bold tabular-nums text-brand ${compact ? "text-xl" : "text-2xl"}`}>
-              {formatUsd(comisionMensualRecomendada(r))}
+              {formatUsd(comisionMensualResumenUsd)}
             </p>
           </div>
         </div>
+        {comisionResumenEsPersonalizada && (
+          <p className="mt-2 text-[10px] font-medium text-amber-800/90">
+            Total mensual mostrado según ajuste acordado con comercial.
+          </p>
+        )}
       </div>
 
       <p className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-slate-600">
@@ -607,6 +608,14 @@ export function CotizacionPdfClienteDocument({
       ? null
       : (METODOS_PAGO_INTEGRACION.find((m) => m.id === form.metodoPagoIntegracion)
           ?.label ?? null);
+
+  const kioscosMontosPdf =
+    form.tipoServicioPuntoPago === "kioscos" && resultadoIntegracion && resultadoComision
+      ? {
+          impl: resolverMontoImplementacionKioscosPdf(form, resultadoIntegracion),
+          com: resolverComisionMensualKioscosPdf(form, resultadoComision),
+        }
+      : null;
 
   return (
     <article
@@ -720,7 +729,8 @@ export function CotizacionPdfClienteDocument({
 
         {form.tipoServicioPuntoPago === "kioscos" &&
           resultadoIntegracion &&
-          resultadoComision && (
+          resultadoComision &&
+          kioscosMontosPdf && (
             <div className="mt-5 space-y-4">
               <section
                 data-pdf-evitar-corte
@@ -732,8 +742,16 @@ export function CotizacionPdfClienteDocument({
                     Set up e integración
                   </h3>
                   <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
-                    {formatUsd(resultadoIntegracion.totalUsd)}
+                    {formatUsd(
+                      kioscosMontosPdf?.impl.monto ?? resultadoIntegracion.totalUsd,
+                    )}
                   </p>
+                  {kioscosMontosPdf?.impl.esPersonalizado && (
+                    <p className="mt-2 text-xs font-medium text-amber-800/90">
+                      Total de implementación / integración según monto acordado con el
+                      asesor para esta cotización.
+                    </p>
+                  )}
                   <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
                     Incluye el costo de integración según la modalidad y opciones
                     indicadas en la cotización (referencial).
@@ -763,7 +781,12 @@ export function CotizacionPdfClienteDocument({
                     Estimación con base en el volumen y el ticket indicados en el
                     cotizador.
                   </p>
-                  <TablaComparacionComision r={resultadoComision} compact />
+                  <TablaComparacionComision
+                    r={resultadoComision}
+                    compact
+                    comisionMensualResumenUsd={kioscosMontosPdf.com.monto}
+                    comisionResumenEsPersonalizada={kioscosMontosPdf.com.esPersonalizado}
+                  />
                 </div>
               </section>
 
@@ -791,7 +814,7 @@ export function CotizacionPdfClienteDocument({
                   )}
                   , la comisión mensual estimada bajo el modelo indicado arriba sería de{" "}
                   <span className="font-semibold text-brand">
-                    {formatUsd(comisionMensualRecomendada(resultadoComision))}
+                    {formatUsd(kioscosMontosPdf.com.monto)}
                   </span>
                   .
                 </p>

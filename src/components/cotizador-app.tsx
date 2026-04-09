@@ -45,6 +45,11 @@ import {
   IMAGEN_ALCANCE_APP,
   IMAGEN_ALCANCE_KIOSCOS,
 } from "@/lib/alcance-servicio-kioscos";
+import { AlcanceKioscosTextoBloque } from "@/components/alcance-kioscos-texto-bloque";
+import {
+  resolverComisionMensualKioscosPdf,
+  resolverMontoImplementacionKioscosPdf,
+} from "@/lib/cotizacion-kioscos-montos";
 import { buildCotizacionPayload } from "@/lib/cotizacion-payload";
 import { esCotizacionCompleta } from "@/lib/cotizacion-validacion";
 import {
@@ -115,6 +120,25 @@ export function CotizadorApp() {
 
   const onBlurFormatearMontoUsd = useCallback(
     (campo: "ventasMensualesTotalUsd" | "volumenCashOutMensualUsd") => {
+      setForm((prev) => {
+        const raw = prev[campo].trim();
+        if (raw === "") return prev;
+        const n = parseMontoUsd(raw);
+        if (n === null) return prev;
+        const formatted = `$ ${formatearMontoUsdParaCampo(n)}`;
+        if (prev[campo] === formatted) return prev;
+        return { ...prev, [campo]: formatted };
+      });
+    },
+    [],
+  );
+
+  const onBlurFormatearMontoKioscosPdf = useCallback(
+    (
+      campo:
+        | "kioscosMontoImplementacionPersonalizadoUsd"
+        | "kioscosComisionMensualPersonalizadaUsd",
+    ) => {
       setForm((prev) => {
         const raw = prev[campo].trim();
         if (raw === "") return prev;
@@ -284,6 +308,20 @@ export function CotizadorApp() {
     form.ventasMensualesTotalUsd,
     form.cantidadVentasMensuales,
   ]);
+
+  const kioscosImplementacionPdf = useMemo(() => {
+    if (form.tipoServicioPuntoPago !== "kioscos" || !resultadoIntegracion) {
+      return null;
+    }
+    return resolverMontoImplementacionKioscosPdf(form, resultadoIntegracion);
+  }, [form, resultadoIntegracion]);
+
+  const kioscosComisionPdf = useMemo(() => {
+    if (form.tipoServicioPuntoPago !== "kioscos" || !resultadoComision) {
+      return null;
+    }
+    return resolverComisionMensualKioscosPdf(form, resultadoComision);
+  }, [form, resultadoComision]);
 
   const cashOutCargoMensualEstimado = useMemo(() => {
     if (form.tipoServicioPuntoPago !== "cash_out") return null;
@@ -805,9 +843,17 @@ export function CotizadorApp() {
                       <div>
                         <dt className="text-xs text-slate-500">
                           Comisión mensual estimada
+                          {kioscosComisionPdf?.esPersonalizado ? (
+                            <span className="ml-1 font-normal text-brand">
+                              (PDF personalizado)
+                            </span>
+                          ) : null}
                         </dt>
                         <dd className="font-semibold text-slate-900">
-                          {formatUsd(comisionMensualRecomendada(resultadoComision))}
+                          {formatUsd(
+                            kioscosComisionPdf?.monto ??
+                              comisionMensualRecomendada(resultadoComision),
+                          )}
                         </dd>
                       </div>
                     </dl>
@@ -1076,14 +1122,92 @@ export function CotizadorApp() {
                   <div className="flex justify-between gap-4 border-t border-slate-200 pt-2">
                     <dt className="font-medium text-slate-800">
                       Total estimado integración
+                      {kioscosImplementacionPdf?.esPersonalizado ? (
+                        <span className="mt-0.5 block text-xs font-normal text-brand">
+                          Monto personalizado para PDF
+                        </span>
+                      ) : null}
                     </dt>
                     <dd className="text-lg font-bold text-brand">
-                      {formatUsd(resultadoIntegracion.totalUsd)}
+                      {formatUsd(
+                        kioscosImplementacionPdf?.monto ??
+                          resultadoIntegracion.totalUsd,
+                      )}
                     </dd>
                   </div>
                 </dl>
               )}
             </div>
+
+            {form.tipoServicioPuntoPago === "kioscos" && (
+              <div className="mt-4 space-y-4 rounded-2xl border border-dashed border-brand/35 bg-white/90 p-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">
+                    Montos en PDF (opcional)
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Deja vacío para usar los valores calculados. Si ingresas un monto
+                    válido, el resumen al cliente y el PDF mostrarán ese importe.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">
+                      Total integración / implementación (USD)
+                    </span>
+                    <input
+                      className={`${inputClass} text-right tabular-nums`}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={form.kioscosMontoImplementacionPersonalizadoUsd}
+                      onChange={(e) =>
+                        setField(
+                          "kioscosMontoImplementacionPersonalizadoUsd",
+                          formatearMontoUsdEnVivo(e.target.value),
+                        )
+                      }
+                      onBlur={() =>
+                        onBlurFormatearMontoKioscosPdf(
+                          "kioscosMontoImplementacionPersonalizadoUsd",
+                        )
+                      }
+                      placeholder={
+                        resultadoIntegracion
+                          ? `Calculado: ${formatUsd(resultadoIntegracion.totalUsd)}`
+                          : "Ej. $ 12,500"
+                      }
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">
+                      Comisión mensual estimada (USD)
+                    </span>
+                    <input
+                      className={`${inputClass} text-right tabular-nums`}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={form.kioscosComisionMensualPersonalizadaUsd}
+                      onChange={(e) =>
+                        setField(
+                          "kioscosComisionMensualPersonalizadaUsd",
+                          formatearMontoUsdEnVivo(e.target.value),
+                        )
+                      }
+                      onBlur={() =>
+                        onBlurFormatearMontoKioscosPdf(
+                          "kioscosComisionMensualPersonalizadaUsd",
+                        )
+                      }
+                      placeholder={
+                        resultadoComision
+                          ? `Calculado: ${formatUsd(comisionMensualRecomendada(resultadoComision))}`
+                          : "Ej. $ 850"
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
             </>
           )}
@@ -1198,21 +1322,30 @@ export function CotizadorApp() {
                   <strong>sin cargo adicional</strong> por canal.
                 </p>
                 <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-                  <div className="overflow-hidden rounded-xl bg-neutral-950 shadow-sm ring-1 ring-slate-200">
+                  <div
+                    className="overflow-hidden rounded-xl bg-neutral-950 shadow-sm ring-1 ring-slate-200 opacity-0 motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100 motion-reduce:animate-none animate-alcance-img"
+                    style={{ animationDelay: "0ms" }}
+                  >
                     <img
                       src={IMAGEN_ALCANCE_KIOSCOS}
                       alt=""
                       className="h-24 w-full object-contain object-center sm:h-28"
                     />
                   </div>
-                  <div className="overflow-hidden rounded-xl bg-blue-600 shadow-sm ring-1 ring-slate-200">
+                  <div
+                    className="overflow-hidden rounded-xl bg-blue-600 shadow-sm ring-1 ring-slate-200 opacity-0 motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100 motion-reduce:animate-none animate-alcance-img"
+                    style={{ animationDelay: "90ms" }}
+                  >
                     <img
                       src={IMAGEN_ALCANCE_APP}
                       alt=""
                       className="h-24 w-full object-contain object-center sm:h-28"
                     />
                   </div>
-                  <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                  <div
+                    className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 opacity-0 motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100 motion-reduce:animate-none animate-alcance-img"
+                    style={{ animationDelay: "180ms" }}
+                  >
                     <img
                       src={IMAGEN_ALCANCE_API}
                       alt=""
@@ -1220,27 +1353,7 @@ export function CotizadorApp() {
                     />
                   </div>
                 </div>
-                <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-slate-700">
-                  <li>
-                    <strong>App Punto Pago</strong> y <strong>red de kioscos</strong>: tu comercio
-                    aparecerá dentro de nuestra app, que tiene más de{" "}
-                    <strong>150 mil usuarios activos al mes</strong>, y también en nuestra red de
-                    kioscos. Esto significa que más personas podrán encontrarte y pagarte
-                    fácilmente. En la app, los clientes pueden hacer recargas y pagos usando
-                    tarjetas bancarias, incluyendo <strong>Clave</strong>, además de opciones como{" "}
-                    <strong>Yappy</strong> y <strong>transferencias ACH</strong>. Todo esto sin
-                    costos adicionales por estar visible en estos canales.
-                  </li>
-                  <li>
-                    <strong>Bancos y billeteras digitales:</strong> Punto Pago ya tiene acuerdos
-                    con bancos y billeteras digitales que permiten a los usuarios pagar servicios
-                    directamente desde sus apps o banca en línea. Al integrarte con nosotros, tu
-                    comercio se conecta automáticamente a estos canales, sin necesidad de hacer
-                    integraciones por separado con cada banco. Esto facilita que más clientes te
-                    paguen desde donde ya manejan su dinero, aumentando la cantidad de pagos que
-                    puedes recibir.
-                  </li>
-                </ul>
+                <AlcanceKioscosTextoBloque compact animated />
               </section>
             )}
 
@@ -1347,9 +1460,17 @@ export function CotizadorApp() {
                       <tr className="bg-slate-50">
                         <td className="px-3 py-2 font-semibold text-slate-900">
                           Total integración (est.)
+                          {kioscosImplementacionPdf?.esPersonalizado ? (
+                            <span className="mt-0.5 block text-xs font-normal text-brand">
+                              Monto acordado con comercial
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-3 py-2 text-right font-bold text-brand">
-                          {formatUsd(resultadoIntegracion.totalUsd)}
+                          {formatUsd(
+                            kioscosImplementacionPdf?.monto ??
+                              resultadoIntegracion.totalUsd,
+                          )}
                         </td>
                       </tr>
                     </tbody>
@@ -1396,7 +1517,15 @@ export function CotizadorApp() {
                   <div>
                     <dt className="text-slate-500">Comisión mensual estimada</dt>
                     <dd className="font-medium text-slate-900">
-                      {formatUsd(comisionMensualRecomendada(resultadoComision))}
+                      {formatUsd(
+                        kioscosComisionPdf?.monto ??
+                          comisionMensualRecomendada(resultadoComision),
+                      )}
+                      {kioscosComisionPdf?.esPersonalizado ? (
+                        <span className="mt-1 block text-xs font-normal text-brand">
+                          Monto mostrado según acuerdo comercial
+                        </span>
+                      ) : null}
                     </dd>
                   </div>
                 </dl>
@@ -1459,11 +1588,25 @@ export function CotizadorApp() {
             const notasIntegracion = form.tecnologiaDetalle.trim()
               ? `\n- Notas integración: ${form.tecnologiaDetalle.trim()}`
               : "";
-            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nVendedor: ${form.nombreVendedor.trim() || "—"}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
+            const totalIntegracionPlano =
+              resultadoIntegracion
+                ? `${formatUsd(
+                    kioscosImplementacionPdf?.monto ??
+                      resultadoIntegracion.totalUsd,
+                  )}${kioscosImplementacionPdf?.esPersonalizado ? " (PDF personalizado)" : ""}`
+                : "—";
+            const comisionMensualPlano =
+              resultadoComision
+                ? `${formatUsd(
+                    kioscosComisionPdf?.monto ??
+                      comisionMensualRecomendada(resultadoComision),
+                  )}${kioscosComisionPdf?.esPersonalizado ? " (PDF personalizado)" : ""}`
+                : "";
+            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nVendedor: ${form.nombreVendedor.trim() || "—"}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Total integración est.: ${totalIntegracionPlano}`;
             const bloqueComision = resultadoComision
               ? resultadoComision.comisionSoloPorcentaje
-                ? `\n\nComisión (referencial — política 5% segmento):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- ${textoExplicativoComision(resultadoComision)}`
-                : `\n\nComisión recomendada (referencial; ${DEFAULT_COMISION_PORCENTAJE}% vs ${DEFAULT_COMISION_FIJA_USD} USD por txn):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(resultadoComision)}`
+                ? `\n\nComisión (referencial — política 5% segmento):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${comisionMensualPlano}\n- ${textoExplicativoComision(resultadoComision)}`
+                : `\n\nComisión recomendada (referencial; ${DEFAULT_COMISION_PORCENTAJE}% vs ${DEFAULT_COMISION_FIJA_USD} USD por txn):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(resultadoComision)}`
               : "\n\nComisión: complete monto y cantidad de ventas (sección 4).\n";
             const cola = `\n${form.observaciones ? `Notas:\n${form.observaciones}\n\n` : ""}Condiciones:\n${form.condicionesComerciales}\n\n${form.nombreVendedor ? form.nombreVendedor + " · " : ""}Equipo comercial Punto Pago`;
             return cabeza + bloqueComision + cola;
