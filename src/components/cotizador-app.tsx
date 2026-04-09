@@ -62,6 +62,8 @@ import { esEmailFormatoValido } from "@/lib/email";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
+  TEXTO_ACCESO_AGENTES_CREDENCIALES,
+  TEXTO_COMISIONES_PROCESAMIENTO_AGENTES,
   TEXTO_MODELO_COMISION_HUB_AGENTES,
   TIPOS_SERVICIO_PUNTO_PAGO,
 } from "@/lib/tipo-servicio-punto-pago";
@@ -673,13 +675,11 @@ export function CotizadorApp() {
             <div className="border-t border-slate-100 pt-6">
               <h3 className="text-base font-semibold text-slate-900">Agentes</h3>
               <div className="mt-2 space-y-3 text-sm text-slate-600">
-                <p>
-                  <span className="font-semibold text-slate-800">Set up referencial:</span>{" "}
-                  {formatUsd(SETUP_FEE_HUB_REF_USD)} (USD). Mismo modelo de comisiones que
-                  Hub de pagos.
+                <p className="leading-relaxed text-slate-700">
+                  {TEXTO_ACCESO_AGENTES_CREDENCIALES}
                 </p>
                 <p className="leading-relaxed text-slate-700">
-                  {TEXTO_MODELO_COMISION_HUB_AGENTES}
+                  {TEXTO_COMISIONES_PROCESAMIENTO_AGENTES}
                 </p>
               </div>
             </div>
@@ -1442,7 +1442,7 @@ export function CotizadorApp() {
                   : form.tipoServicioPuntoPago === "cash_out"
                     ? `\nAlcance del servicio: Cash out / desembolsos; condiciones operativas en el acuerdo comercial.\n`
                     : form.tipoServicioPuntoPago === "agentes"
-                      ? `\nAlcance del servicio: Agentes — esquema referencial; detalle con Punto Pago.\n`
+                      ? `\nAlcance del servicio: Agentes — Punto Pago no cobra al agente por activación; saldo recargable y portal con credenciales; descuentos por pago desde el saldo; comisiones de procesamiento que liquida Punto Pago al agente; detalle con Punto Pago.\n`
                       : "";
             const notasIntegracion = form.tecnologiaDetalle.trim()
               ? `\n- Notas integración: ${form.tecnologiaDetalle.trim()}`

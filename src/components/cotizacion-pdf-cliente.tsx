@@ -30,6 +30,8 @@ import {
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
+  TEXTO_ACCESO_AGENTES_CREDENCIALES,
+  TEXTO_COMISIONES_PROCESAMIENTO_AGENTES,
   TEXTO_MODELO_COMISION_HUB_AGENTES,
 } from "@/lib/tipo-servicio-punto-pago";
 
@@ -145,11 +147,14 @@ function BloqueAlcanceServicio({
           Alcance del servicio
         </h3>
         <p className="mt-3 text-sm font-medium leading-relaxed text-slate-900">
-          <strong>Agentes:</strong> mismo modelo de comisiones que Hub de pagos; alcance
-          territorial y operación se definen con Punto Pago.
+          <strong>Agentes:</strong> alcance territorial y operación se definen con Punto
+          Pago.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          {TEXTO_MODELO_COMISION_HUB_AGENTES}
+          {TEXTO_ACCESO_AGENTES_CREDENCIALES}
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          {TEXTO_COMISIONES_PROCESAMIENTO_AGENTES}
         </p>
       </section>
     );
@@ -647,22 +652,21 @@ export function CotizacionPdfClienteDocument({
           <div className="mt-6 space-y-4">
             <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
               <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Set up referencial
+                Saldo, portal y credenciales
               </h3>
-              <p className="mt-3 text-3xl font-bold tabular-nums text-slate-900">
-                {formatUsd(SETUP_FEE_HUB_REF_USD)}
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                {TEXTO_ACCESO_AGENTES_CREDENCIALES}
               </p>
             </section>
             <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
               <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Comisiones (empresas de servicio y comercio)
+                Comisiones de procesamiento (agente)
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                {TEXTO_MODELO_COMISION_HUB_AGENTES}
+                {TEXTO_COMISIONES_PROCESAMIENTO_AGENTES}
               </p>
               <p className="mt-3 text-xs text-slate-500">
-                Mismo esquema que Hub de pagos; detalle territorial y operativo con el
-                equipo comercial.
+                Detalle territorial y operativo con el equipo comercial.
               </p>
             </section>
           </div>

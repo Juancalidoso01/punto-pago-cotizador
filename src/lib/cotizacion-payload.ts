@@ -15,6 +15,8 @@ import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
   SETUP_FEE_HUB_REF_USD,
+  TEXTO_ACCESO_AGENTES_CREDENCIALES,
+  TEXTO_COMISIONES_PROCESAMIENTO_AGENTES,
   TEXTO_MODELO_COMISION_HUB_AGENTES,
 } from "@/lib/tipo-servicio-punto-pago";
 
@@ -86,8 +88,8 @@ export function buildCotizacionPayload(
   if (form.tipoServicioPuntoPago === "agentes") {
     return {
       ...base,
-      setupFeeHubRefUsd: SETUP_FEE_HUB_REF_USD,
-      nota: `Agentes. ${TEXTO_MODELO_COMISION_HUB_AGENTES}`,
+      accesoAgentesCredenciales: TEXTO_ACCESO_AGENTES_CREDENCIALES,
+      notaComisiones: TEXTO_COMISIONES_PROCESAMIENTO_AGENTES,
     };
   }
 
