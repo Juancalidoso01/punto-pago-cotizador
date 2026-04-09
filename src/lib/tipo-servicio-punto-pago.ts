@@ -58,6 +58,12 @@ export const TEXTO_COMISIONES_PROCESAMIENTO_AGENTES =
 export const TEXTO_ACCESO_AGENTES_CREDENCIALES =
   "Punto Pago no cobra al agente por la activación ni por set up. Una vez activo el servicio, Punto Pago paga al agente las comisiones de procesamiento según lo acordado. El agente debe recargar y mantener un saldo o balance: con las credenciales accede a un portal web donde ve el saldo depositado, y cada pago que procesa se descuenta de ese saldo. Plazos y condiciones operativas se confirman con el equipo comercial.";
 
+/**
+ * Textos breves solo para PDF Agentes (cotizador/payload siguen usando TEXTO_* largos).
+ */
+export const PDF_AGENTES_SUBTITULO =
+  "Territorio y forma de operar se acuerdan con comercial.";
+
 /** Cargo referencial al comercio en Cash out (% sobre volumen mensual indicado) */
 export const CASH_OUT_CARGO_CLIENTE_PCT = 3;
 

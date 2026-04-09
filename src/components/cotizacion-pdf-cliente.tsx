@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- rasterizado fiel en PDF (html2canvas) */
+import type { ReactNode } from "react";
 import {
   textoExplicativoComision,
   tituloModeloRecomendado,
@@ -29,11 +30,35 @@ import {
 } from "@/lib/alcance-servicio-kioscos";
 import {
   CASH_OUT_CARGO_CLIENTE_PCT,
+  PDF_AGENTES_SUBTITULO,
   SETUP_FEE_HUB_REF_USD,
-  TEXTO_ACCESO_AGENTES_CREDENCIALES,
-  TEXTO_COMISIONES_PROCESAMIENTO_AGENTES,
   TEXTO_MODELO_COMISION_HUB_AGENTES,
 } from "@/lib/tipo-servicio-punto-pago";
+
+function IconoPdfAgente({
+  children,
+  label,
+  caption,
+}: {
+  children: ReactNode;
+  label: string;
+  caption: string;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div
+        className="flex h-14 w-full max-w-[7.5rem] items-center justify-center rounded-xl border border-slate-200/90 bg-white shadow-sm"
+        aria-hidden
+      >
+        {children}
+      </div>
+      <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        {label}
+      </p>
+      <p className="mt-0.5 text-[11px] leading-snug text-slate-600">{caption}</p>
+    </div>
+  );
+}
 
 const DIAS_VALIDEZ_COTIZACION = 15;
 
@@ -46,7 +71,10 @@ function BloqueAlcanceServicio({
 
   if (tipoServicio === "kioscos") {
     return (
-      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm ring-1 ring-slate-100">
+      <section
+        data-pdf-evitar-corte
+        className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm ring-1 ring-slate-100"
+      >
         <div className="grid grid-cols-3 gap-3 border-y border-slate-100 py-4">
           <div
             className="flex flex-col items-center justify-center"
@@ -110,7 +138,10 @@ function BloqueAlcanceServicio({
 
   if (tipoServicio === "hub_pagos") {
     return (
-      <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100">
+      <section
+        data-pdf-evitar-corte
+        className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100"
+      >
         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Alcance del servicio
         </h3>
@@ -127,7 +158,10 @@ function BloqueAlcanceServicio({
 
   if (tipoServicio === "cash_out") {
     return (
-      <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100">
+      <section
+        data-pdf-evitar-corte
+        className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100"
+      >
         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Alcance del servicio
         </h3>
@@ -142,21 +176,151 @@ function BloqueAlcanceServicio({
 
   if (tipoServicio === "agentes") {
     return (
-      <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-100">
+      <>
+        <section
+          data-pdf-evitar-corte
+          className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm ring-1 ring-slate-100 sm:p-6"
+        >
         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Alcance del servicio
         </h3>
-        <p className="mt-3 text-sm font-medium leading-relaxed text-slate-900">
-          <strong>Agentes:</strong> alcance territorial y operación se definen con Punto
-          Pago.
+        <p className="mt-2 text-base font-semibold leading-snug text-slate-900">
+          Agentes Punto Pago
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          {TEXTO_ACCESO_AGENTES_CREDENCIALES}
+        <p className="mt-1 text-xs text-slate-500">{PDF_AGENTES_SUBTITULO}</p>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 print:grid-cols-3">
+          <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white p-4 text-center shadow-sm ring-1 ring-emerald-100/80">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-800/90">
+              Activación y set up
+            </p>
+            <p className="mt-2 text-4xl font-bold tabular-nums leading-none tracking-tight text-emerald-950">
+              USD 0
+            </p>
+            <p className="mt-2 text-[11px] leading-snug text-emerald-900/85">
+              Punto Pago no cobra al agente por activar ni por set up.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-brand/25 bg-gradient-to-br from-brand/[0.12] to-white p-4 text-center shadow-sm ring-1 ring-brand/15">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand">
+              Tu comisión (referencia)
+            </p>
+            <p className="mt-2 text-4xl font-bold tabular-nums leading-none tracking-tight text-slate-900">
+              ~0,30
+            </p>
+            <p className="mt-1 text-xs font-medium text-slate-600">USD por pago</p>
+            <p className="mt-2 text-[11px] leading-snug text-slate-600">
+              Promedio orientativo; varía por marca y tipo de servicio.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 text-center shadow-sm ring-1 ring-slate-100">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Ej. tiempo aire
+            </p>
+            <p className="mt-2 text-4xl font-bold tabular-nums leading-none tracking-tight text-slate-900">
+              ~2%
+            </p>
+            <p className="mt-1 text-xs font-medium text-slate-600">recargas</p>
+            <p className="mt-2 text-[11px] leading-snug text-slate-600">
+              P. ej. prepago +móvil y Tigo (referencia).
+            </p>
+          </div>
+        </div>
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
+          Cifras orientativas para Panamá. Tasas y listado final con el equipo comercial.
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          {TEXTO_COMISIONES_PROCESAMIENTO_AGENTES}
-        </p>
-      </section>
+        </section>
+
+        <section
+          data-pdf-evitar-corte
+          className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm ring-1 ring-slate-100 sm:p-6"
+        >
+          <p className="text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Cómo funciona (resumen)
+          </p>
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3 print:grid-cols-3">
+            <IconoPdfAgente
+              label="Saldo"
+              caption="Recargas; cada pago se descuenta del balance."
+            >
+              <svg
+                className="h-8 w-8 text-slate-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 12a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 12v6.75A2.25 2.25 0 0 0 6.75 21h12c.621 0 1.125-.504 1.125-1.125V12Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 12V6.75A2.25 2.25 0 0 1 5.25 4.5h3.879a2.25 2.25 0 0 1 1.59.659l1.78 1.78a2.25 2.25 0 0 0 1.59.659H18.75A2.25 2.25 0 0 1 21 9v3"
+                />
+              </svg>
+            </IconoPdfAgente>
+            <IconoPdfAgente
+              label="Portal web"
+              caption="Credenciales para ver saldo y movimientos."
+            >
+              <svg
+                className="h-8 w-8 text-slate-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a9.004 9.004 0 0 1 8.716-6.747M12 3a9.004 9.004 0 0 0-8.716 6.747"
+                />
+              </svg>
+            </IconoPdfAgente>
+            <IconoPdfAgente
+              label="Comisiones"
+              caption="Punto Pago liquida al agente al activar el servicio."
+            >
+              <svg
+                className="h-8 w-8 text-slate-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 18.75a60.07 60.07 0 0 0 15.5 0m-15.5 0v-3.75a60.07 60.07 0 0 1 15.5 0m-15.5 0h15.5m-15.5 0H3.375A2.25 2.25 0 0 1 1.125 16.5v-9c0-.621.504-1.125 1.125-1.125h15.75c.621 0 1.125.504 1.125 1.125v9c0 .621-.504 1.125-1.125 1.125h-1.5Z"
+                />
+              </svg>
+            </IconoPdfAgente>
+          </div>
+
+        <ul className="mt-5 space-y-2.5 text-sm leading-relaxed text-slate-700">
+          <li className="flex gap-2">
+            <span className="font-semibold text-slate-900">Servicios.</span>
+            <span>
+              Pagos a marcas y empresas de servicios (luz, agua, telefonía, facturas y
+              recargas; p. ej. ENSA, Naturgy).
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="font-semibold text-slate-900">Reglas.</span>
+            <span>
+              Mezcla de % y centavos por transacción según listado; no es una sola tasa para
+              todo.
+            </span>
+          </li>
+        </ul>
+        </section>
+      </>
     );
   }
 
@@ -491,7 +655,10 @@ export function CotizacionPdfClienteDocument({
       </header>
 
       <div className="relative z-20 -mt-10 px-8 pb-10 print:px-6 print:pb-8">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/[0.06] ring-1 ring-slate-200/60 print:shadow-none">
+        <div
+          data-pdf-evitar-corte
+          className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/[0.06] ring-1 ring-slate-200/60 print:shadow-none"
+        >
           <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Datos del cliente
           </h2>
@@ -526,6 +693,7 @@ export function CotizacionPdfClienteDocument({
           resultadoComision && (
             <div className="mt-5 space-y-4">
               <section
+                data-pdf-evitar-corte
                 data-pdf-bloque-setup
                 className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100"
               >
@@ -569,7 +737,10 @@ export function CotizacionPdfClienteDocument({
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 text-sm leading-relaxed text-slate-800">
+              <section
+                data-pdf-evitar-corte
+                className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 text-sm leading-relaxed text-slate-800"
+              >
                 <p className="font-semibold text-slate-900">Ejemplo ilustrativo</p>
                 <p className="mt-2">
                   Si las ventas mensuales fueran de{" "}
@@ -600,7 +771,10 @@ export function CotizacionPdfClienteDocument({
 
         {form.tipoServicioPuntoPago === "hub_pagos" && (
           <div className="mt-6 space-y-4">
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+            <section
+              data-pdf-evitar-corte
+              className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+            >
               <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Set up fee (referencial)
               </h3>
@@ -608,7 +782,10 @@ export function CotizacionPdfClienteDocument({
                 {formatUsd(SETUP_FEE_HUB_REF_USD)}
               </p>
             </section>
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+            <section
+              data-pdf-evitar-corte
+              className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+            >
               <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Comisiones (empresas de servicio y comercio)
               </h3>
@@ -626,7 +803,10 @@ export function CotizacionPdfClienteDocument({
         {form.tipoServicioPuntoPago === "cash_out" &&
           cashOutCargoMensualEstimado !== null && (
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+              <section
+                data-pdf-evitar-corte
+                className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+              >
                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Volumen mensual (desembolsos)
                 </h3>
@@ -634,7 +814,10 @@ export function CotizacionPdfClienteDocument({
                   {formatUsd(volumenCashOutUsd)}
                 </p>
               </section>
-              <section className="rounded-2xl border border-brand/25 bg-gradient-to-br from-white to-brand/[0.06] p-6 shadow-sm ring-1 ring-brand/15">
+              <section
+                data-pdf-evitar-corte
+                className="rounded-2xl border border-brand/25 bg-gradient-to-br from-white to-brand/[0.06] p-6 shadow-sm ring-1 ring-brand/15"
+              >
                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">
                   Cargo referencial al cliente ({CASH_OUT_CARGO_CLIENTE_PCT}%)
                 </h3>
@@ -648,31 +831,10 @@ export function CotizacionPdfClienteDocument({
             </div>
           )}
 
-        {form.tipoServicioPuntoPago === "agentes" && (
-          <div className="mt-6 space-y-4">
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Saldo, portal y credenciales
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-slate-700">
-                {TEXTO_ACCESO_AGENTES_CREDENCIALES}
-              </p>
-            </section>
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Comisiones de procesamiento (agente)
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                {TEXTO_COMISIONES_PROCESAMIENTO_AGENTES}
-              </p>
-              <p className="mt-3 text-xs text-slate-500">
-                Detalle territorial y operativo con el equipo comercial.
-              </p>
-            </section>
-          </div>
-        )}
-
-        <footer className="mt-8 border-t border-slate-200 pt-6 text-xs leading-relaxed text-slate-500">
+        <footer
+          data-pdf-evitar-corte
+          className="mt-8 border-t border-slate-200 pt-6 text-xs leading-relaxed text-slate-500"
+        >
           <p>
             Cifras referenciales. Vigencia, riesgo, impuestos y condiciones finales se
             confirman con el equipo comercial de Punto Pago.

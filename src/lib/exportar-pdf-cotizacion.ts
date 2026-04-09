@@ -1,4 +1,4 @@
-import { empujarBloquePdfSiCruzaSaltoDePagina } from "@/lib/pdf-ajuste-saltos";
+import { empujarBloquesPdfSiCruzanSaltoDePagina } from "@/lib/pdf-ajuste-saltos";
 
 export type OpcionesExportarPdf = {
   /** id del elemento HTML a rasterizar (por defecto resumen para cliente) */
@@ -29,7 +29,7 @@ export async function exportarCotizacionPdf(
   const { jsPDF } = await import("jspdf");
 
   const root = el as HTMLElement;
-  const revertirMargenSetup = empujarBloquePdfSiCruzaSaltoDePagina(root);
+  const revertirMargenesPdf = empujarBloquesPdfSiCruzanSaltoDePagina(root);
 
   try {
     await esperarReflow();
@@ -72,19 +72,20 @@ export async function exportarCotizacionPdf(
     let heightLeft = imgHeight;
     let position = 0;
     fillPageBg();
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    pdf.addImage(imgData, "PNG", 0, Math.round(position), imgWidth, imgHeight);
     heightLeft -= pageHeight;
     while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       fillPageBg();
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      /** Enteros para evitar líneas/huecos de subpixel entre páginas */
+      pdf.addImage(imgData, "PNG", 0, Math.round(position), imgWidth, imgHeight);
       heightLeft -= pageHeight;
     }
     const safeRef = (ref ?? "borrador").replace(/[^\w.-]+/g, "_");
     const prefijo = opts.nombreArchivo ?? "PP-ResumenCliente";
     pdf.save(`${prefijo}-${safeRef}.pdf`);
   } finally {
-    revertirMargenSetup();
+    revertirMargenesPdf();
   }
 }

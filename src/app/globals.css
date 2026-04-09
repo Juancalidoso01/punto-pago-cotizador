@@ -39,6 +39,11 @@ body {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+  #cotizacion-cliente-document [data-pdf-evitar-corte],
+  #cotizacion-cliente-document [data-pdf-bloque-setup] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
   .no-print {
     display: none !important;
   }

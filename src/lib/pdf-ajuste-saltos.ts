@@ -1,55 +1,95 @@
 /**
- * jsPDF parte el lienzo en franjas de altura A4; si un bloque cruza el corte, se ve partido.
- * Antes de html2canvas, suma margin-top al bloque marcado hasta que no cruce ningún corte
- * (o hasta un máximo de iteraciones).
+ * jsPDF divide el lienzo en franjas de altura A4; si un bloque cruza el corte, bordes y
+ * líneas horizontales se ven “partidos”. Antes de html2canvas, empujamos cada bloque
+ * marcado hasta que no cruce ningún corte (si cabe en una página).
  */
 const ALTURA_A4_PT = 841.89;
 const ANCHO_A4_PT = 595.28;
 
-/** Retorna función para restaurar el estilo (llamar en finally). */
-export function empujarBloquePdfSiCruzaSaltoDePagina(
+const SELECTOR_BLOQUES = "[data-pdf-evitar-corte], [data-pdf-bloque-setup]";
+
+/** Separación mínima entre el borde superior del bloque y el corte de página (px en el root). */
+const MARGEN_SEGURO_PX = 24;
+
+function parseMarginTopPx(el: HTMLElement): number {
+  const s = el.style.marginTop;
+  if (!s || s === "auto") return 0;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function bloquesOrdenadosPorY(root: HTMLElement): HTMLElement[] {
+  const vistos = new Set<HTMLElement>();
+  root.querySelectorAll<HTMLElement>(SELECTOR_BLOQUES).forEach((el) => {
+    vistos.add(el);
+  });
+  return Array.from(vistos).sort(
+    (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+  );
+}
+
+function cruzaSaltoDePagina(
   root: HTMLElement,
-  selector: string = "[data-pdf-bloque-setup]",
-): () => void {
-  const bloque = root.querySelector<HTMLElement>(selector);
-  if (!bloque) {
+  bloque: HTMLElement,
+  pasoPaginaPx: number,
+): number | null {
+  void bloque.offsetHeight;
+  const rootRect = root.getBoundingClientRect();
+  const topRel = bloque.getBoundingClientRect().top - rootRect.top;
+  const bottomRel = topRel + bloque.offsetHeight;
+
+  for (let corte = pasoPaginaPx; corte < bottomRel; corte += pasoPaginaPx) {
+    if (topRel < corte - 1 && bottomRel > corte + 1) {
+      return corte;
+    }
+  }
+  return null;
+}
+
+/** Retorna función para restaurar estilos (llamar en finally). */
+export function empujarBloquesPdfSiCruzanSaltoDePagina(root: HTMLElement): () => void {
+  const bloques = bloquesOrdenadosPorY(root);
+  if (bloques.length === 0) {
     return () => {};
   }
 
-  const marginPrev = bloque.style.marginTop;
+  const marginPrev = bloques.map((b) => b.style.marginTop);
   const pasoPaginaPx = (root.offsetWidth * ALTURA_A4_PT) / ANCHO_A4_PT;
+  /** Si el bloque es más alto que una página, no se puede evitar el corte. */
+  const altoMaxEvitable = pasoPaginaPx * 0.92;
 
-  let margenExtraPx = 0;
+  for (let iter = 0; iter < 64; iter++) {
+    let movio = false;
+    const ordenados = bloquesOrdenadosPorY(root);
 
-  for (let iter = 0; iter < 16; iter++) {
-    bloque.style.marginTop =
-      margenExtraPx > 0 ? `${margenExtraPx}px` : marginPrev || "";
-    void bloque.offsetHeight;
-
-    const rootRect = root.getBoundingClientRect();
-    const topRel = bloque.getBoundingClientRect().top - rootRect.top;
-    const bottomRel = topRel + bloque.offsetHeight;
-
-    let corteCruzado: number | null = null;
-    for (let corte = pasoPaginaPx; corte < bottomRel; corte += pasoPaginaPx) {
-      if (topRel < corte - 1 && bottomRel > corte + 1) {
-        corteCruzado = corte;
-        break;
+    for (const bloque of ordenados) {
+      if (bloque.offsetHeight > altoMaxEvitable) {
+        continue;
       }
+
+      const corte = cruzaSaltoDePagina(root, bloque, pasoPaginaPx);
+      if (corte === null) continue;
+
+      const rootRect = root.getBoundingClientRect();
+      const topRel = bloque.getBoundingClientRect().top - rootRect.top;
+      const delta = Math.ceil(corte - topRel + MARGEN_SEGURO_PX);
+      if (delta <= 0) continue;
+
+      bloque.style.marginTop = `${parseMarginTopPx(bloque) + delta}px`;
+      movio = true;
     }
 
-    if (corteCruzado === null) {
-      break;
-    }
-
-    margenExtraPx += Math.ceil(corteCruzado - topRel + 28);
-  }
-
-  if (margenExtraPx > 0) {
-    bloque.style.marginTop = `${margenExtraPx}px`;
+    if (!movio) break;
   }
 
   return () => {
-    bloque.style.marginTop = marginPrev;
+    bloques.forEach((b, i) => {
+      b.style.marginTop = marginPrev[i];
+    });
   };
+}
+
+/** @deprecated Usar empujarBloquesPdfSiCruzanSaltoDePagina */
+export function empujarBloquePdfSiCruzaSaltoDePagina(root: HTMLElement): () => void {
+  return empujarBloquesPdfSiCruzanSaltoDePagina(root);
 }
