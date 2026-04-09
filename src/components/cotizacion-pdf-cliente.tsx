@@ -4,22 +4,16 @@ import {
   textoExplicativoComision,
   tituloModeloRecomendado,
 } from "@/lib/cotizacion-texto";
-import {
-  DEFAULT_COMISION_FIJA_USD,
-  DEFAULT_COMISION_PORCENTAJE,
-  METODOS_PAGO_INTEGRACION,
-  type CotizacionForm,
-} from "@/lib/cotizacion-types";
-import {
-  costoTxnRecomendado,
-  formatPct,
-  formatUsd,
-  type ResultadoComision,
-} from "@/lib/comision";
+import { METODOS_PAGO_INTEGRACION, type CotizacionForm } from "@/lib/cotizacion-types";
+import { formatPct, formatUsd, type ResultadoComision } from "@/lib/comision";
 import { AlcanceKioscosTextoBloque } from "@/components/alcance-kioscos-texto-bloque";
 import {
+  notaTarifaComercialKioscosDoc,
   resolverComisionMensualKioscosPdf,
+  resolverCostoTxnKioscosPdf,
   resolverMontoImplementacionKioscosPdf,
+  resolverResultadoComisionEfectivoKioscos,
+  resolverSetupFeeKioscosPdf,
 } from "@/lib/cotizacion-kioscos-montos";
 import {
   fechaMasDias,
@@ -78,18 +72,24 @@ function BloqueAlcanceServicio({
     return (
       <section
         data-pdf-evitar-corte
-        className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm ring-1 ring-slate-100"
+        className="mt-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/90 p-3 shadow-sm ring-1 ring-slate-100 sm:p-4"
       >
-        <div className="grid grid-cols-3 gap-3 border-y border-slate-100 py-4">
+        <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+          Alcance del servicio
+        </h3>
+        <p className="mt-1.5 text-xs font-medium leading-snug text-slate-800">
+          Tres canales incluidos al integrarte (misma cotización)
+        </p>
+        <div className="mt-2.5 grid grid-cols-3 gap-2 border-y border-slate-100 py-2.5">
           <div
             className="flex flex-col items-center justify-center"
             aria-label="Red de kioscos"
           >
-            <div className="overflow-hidden rounded-xl bg-neutral-950 shadow-sm ring-1 ring-slate-100">
+            <div className="overflow-hidden rounded-lg bg-neutral-950 shadow-sm ring-1 ring-slate-100">
               <img
                 src={IMAGEN_ALCANCE_KIOSCOS}
                 alt=""
-                className="h-28 w-full object-contain object-center sm:h-32"
+                className="h-[4.5rem] w-full object-contain object-center sm:h-20"
               />
             </div>
           </div>
@@ -97,11 +97,11 @@ function BloqueAlcanceServicio({
             className="flex flex-col items-center justify-center"
             aria-label="App Punto Pago"
           >
-            <div className="overflow-hidden rounded-xl bg-blue-600 shadow-sm ring-1 ring-slate-100">
+            <div className="overflow-hidden rounded-lg bg-blue-600 shadow-sm ring-1 ring-slate-100">
               <img
                 src={IMAGEN_ALCANCE_APP}
                 alt=""
-                className="h-28 w-full object-contain object-center sm:h-32"
+                className="h-[4.5rem] w-full object-contain object-center sm:h-20"
               />
             </div>
           </div>
@@ -109,16 +109,16 @@ function BloqueAlcanceServicio({
             className="flex flex-col items-center justify-center"
             aria-label="Bancos y billeteras / API"
           >
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
+            <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-100">
               <img
                 src={IMAGEN_ALCANCE_API}
                 alt=""
-                className="h-28 w-full object-contain object-center sm:h-32"
+                className="h-[4.5rem] w-full object-contain object-center sm:h-20"
               />
             </div>
           </div>
         </div>
-        <AlcanceKioscosTextoBloque />
+        <AlcanceKioscosTextoBloque compact className="!mt-2" />
       </section>
     );
   }
@@ -356,9 +356,9 @@ function BloqueVigencia({ fechaExportacion }: { fechaExportacion: Date | null })
   }
   const hasta = fechaMasDias(fechaExportacion, DIAS_VALIDEZ_COTIZACION);
   return (
-    <div className="rounded-xl border border-brand/25 bg-gradient-to-br from-brand/[0.08] to-white px-4 py-3 text-sm text-slate-800 shadow-sm ring-1 ring-brand/10">
+    <div className="rounded-xl border border-brand/25 bg-gradient-to-br from-brand/[0.08] to-white px-3 py-2.5 text-sm text-slate-800 shadow-sm ring-1 ring-brand/10 sm:px-4 sm:py-3">
       <p className="font-semibold text-slate-900">Vigencia de la cotización</p>
-      <p className="mt-1.5 leading-relaxed text-slate-700">
+      <p className="mt-1 leading-snug text-slate-700 sm:mt-1.5 sm:leading-relaxed">
         Esta propuesta tiene validez de{" "}
         <strong className="text-brand">{DIAS_VALIDEZ_COTIZACION} días naturales</strong>{" "}
         contados desde su emisión (
@@ -373,23 +373,30 @@ function BloqueVigencia({ fechaExportacion }: { fechaExportacion: Date | null })
   );
 }
 
+function textoNotaDescuentoTarifaComision(pct: number | null): string | null {
+  if (pct === null) return null;
+  return `Descuento comercial de ${formatPct(pct)} sobre el costo por transacción y la comisión mensual estimada (tras la tarifa indicada; referencial).`;
+}
+
 function TablaComparacionComision({
   r,
   compact = false,
   comisionMensualResumenUsd,
-  comisionResumenEsPersonalizada = false,
+  costoTxnResumenUsd,
+  descuentoTarifaPct,
 }: {
   r: ResultadoComision;
   compact?: boolean;
-  /** Monto mostrado en resúmenes (calculado o personalizado por el vendedor) */
   comisionMensualResumenUsd: number;
-  comisionResumenEsPersonalizada?: boolean;
+  costoTxnResumenUsd: number;
+  descuentoTarifaPct: number | null;
 }) {
   const mt = compact ? "mt-2" : "mt-4";
   const cell = compact ? "px-3 py-2" : "px-4 py-3";
   const ddNum = compact ? "text-base" : "text-lg";
   const finalBox = compact ? "px-3 py-3" : "px-4 py-4";
   const finalAmt = compact ? "text-xl" : "text-2xl";
+  const notaDescuentoComision = textoNotaDescuentoTarifaComision(descuentoTarifaPct);
 
   if (r.comisionSoloPorcentaje) {
     return (
@@ -424,7 +431,7 @@ function TablaComparacionComision({
           <div className={cell}>
             <dt className="text-[11px] text-slate-500">Costo por transacción</dt>
             <dd className={`mt-0.5 font-semibold tabular-nums text-brand ${ddNum}`}>
-              {formatUsd(r.costoPorTxnPct)}
+              {formatUsd(costoTxnResumenUsd)}
             </dd>
           </div>
         </dl>
@@ -435,9 +442,9 @@ function TablaComparacionComision({
           <p className={`mt-0.5 font-bold tabular-nums text-brand ${finalAmt}`}>
             {formatUsd(comisionMensualResumenUsd)}
           </p>
-          {comisionResumenEsPersonalizada && (
+          {notaDescuentoComision && (
             <p className="mt-1 text-[10px] font-medium text-amber-800/90">
-              Monto indicado por el asesor para esta cotización.
+              {notaDescuentoComision}
             </p>
           )}
         </div>
@@ -452,15 +459,9 @@ function TablaComparacionComision({
     <div className={`${compact ? "mt-2 space-y-2" : "mt-4 space-y-4"}`}>
       <p className={`leading-relaxed text-slate-600 ${compact ? "text-xs" : "text-sm"}`}>
         Referencia: se comparan{" "}
-        <strong>
-          {formatPct(Number(DEFAULT_COMISION_PORCENTAJE))} sobre cada venta
-        </strong>{" "}
-        frente a{" "}
-        <strong>
-          {formatUsd(Number(DEFAULT_COMISION_FIJA_USD))} por transacción
-        </strong>
-        , con el
-        ticket y volumen indicados en la cotización.
+        <strong>{formatPct(r.pct)} sobre cada venta</strong> frente a{" "}
+        <strong>{formatUsd(r.fijoUsd)} por transacción</strong>, con el ticket y volumen
+        indicados en la cotización.
       </p>
 
       <div className="grid gap-2 sm:grid-cols-2">
@@ -489,7 +490,7 @@ function TablaComparacionComision({
             Modelo porcentaje
           </p>
           <p className="mt-1 text-sm font-medium text-slate-800">
-            {formatPct(Number(DEFAULT_COMISION_PORCENTAJE))} del ticket
+            {formatPct(r.pct)} del ticket
           </p>
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-2 border-t border-slate-100 pt-2">
@@ -532,7 +533,7 @@ function TablaComparacionComision({
             Modelo monto fijo
           </p>
           <p className="mt-1 text-sm font-medium text-slate-800">
-            {formatUsd(Number(DEFAULT_COMISION_FIJA_USD))} por operación
+            {formatUsd(r.fijoUsd)} por operación
           </p>
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-2 border-t border-slate-100 pt-2">
@@ -566,7 +567,7 @@ function TablaComparacionComision({
           <div>
             <p className="text-[11px] text-slate-500">Costo por transacción</p>
             <p className={`font-bold tabular-nums text-slate-900 ${compact ? "text-lg" : "text-xl"}`}>
-              {formatUsd(costoTxnRecomendado(r))}
+              {formatUsd(costoTxnResumenUsd)}
             </p>
           </div>
           <div className="text-right">
@@ -576,9 +577,9 @@ function TablaComparacionComision({
             </p>
           </div>
         </div>
-        {comisionResumenEsPersonalizada && (
+        {notaDescuentoComision && (
           <p className="mt-2 text-[10px] font-medium text-amber-800/90">
-            Total mensual mostrado según ajuste acordado con comercial.
+            {notaDescuentoComision}
           </p>
         )}
       </div>
@@ -609,11 +610,21 @@ export function CotizacionPdfClienteDocument({
       : (METODOS_PAGO_INTEGRACION.find((m) => m.id === form.metodoPagoIntegracion)
           ?.label ?? null);
 
+  const resultadoComisionPdf =
+    form.tipoServicioPuntoPago === "kioscos" && resultadoComision
+      ? (resolverResultadoComisionEfectivoKioscos(form, resultadoComision) ??
+        resultadoComision)
+      : resultadoComision;
+
+  const notaTarifaKioscosPdf = notaTarifaComercialKioscosDoc(form);
+
   const kioscosMontosPdf =
     form.tipoServicioPuntoPago === "kioscos" && resultadoIntegracion && resultadoComision
       ? {
           impl: resolverMontoImplementacionKioscosPdf(form, resultadoIntegracion),
           com: resolverComisionMensualKioscosPdf(form, resultadoComision),
+          setup: resolverSetupFeeKioscosPdf(form, resultadoIntegracion),
+          costoTxn: resolverCostoTxnKioscosPdf(form, resultadoComision),
         }
       : null;
 
@@ -622,7 +633,7 @@ export function CotizacionPdfClienteDocument({
       id="cotizacion-cliente-document"
       className="fixed -left-[9999px] top-0 z-0 w-[794px] overflow-visible bg-[#eef0f8] shadow-sm print:static print:left-auto print:top-auto print:z-auto print:w-full print:max-w-none print:rounded-none print:shadow-none"
     >
-      <header className="relative overflow-visible px-10 pb-16 pt-10 text-white print:px-8 print:pb-14 print:pt-8">
+      <header className="relative overflow-visible px-8 pb-9 pt-7 text-white sm:px-10 sm:pb-10 sm:pt-8 print:px-6 print:pb-8 print:pt-6">
         <div
           className="absolute inset-0 bg-gradient-to-br from-[#12132a] via-[#2a2d72] to-[#4749b6]"
           aria-hidden
@@ -636,29 +647,29 @@ export function CotizacionPdfClienteDocument({
           }}
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col gap-6 overflow-visible sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex-1 overflow-visible pr-2 sm:pr-6">
-            <div className="inline-block max-w-full pr-3 sm:pr-5">
+        <div className="relative z-10 flex flex-col gap-3 overflow-visible sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1 overflow-visible pr-0 sm:pr-4">
+            <div className="inline-block max-w-full">
               <img
                 src="/brand/punto-pago-logo-cotizacion-pdf.png"
                 alt="Punto Pago"
                 width={240}
                 height={120}
-                className="block h-11 w-auto max-w-full object-contain object-left"
+                className="block h-9 w-auto max-w-full object-contain object-left sm:h-10"
               />
             </div>
-            <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-[1.65rem]">
+            <h1 className="mt-3 text-xl font-semibold tracking-tight sm:mt-4 sm:text-[1.5rem]">
               Tu propuesta Punto Pago
             </h1>
-            <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/90">
+            <p className="mt-1.5 max-w-xl text-[13px] leading-snug text-white/90 sm:text-sm sm:leading-relaxed">
               <span className="font-medium text-white">
                 Pagos y cobros en Panamá con respaldo y tecnología.
               </span>{" "}
-              Este resumen en USD es referencial; te acompañamos a cerrar el acuerdo que mejor
-              se adapte a tu operación.
+              Resumen en USD referencial; te acompañamos a cerrar el acuerdo adecuado a tu
+              operación.
             </p>
           </div>
-          <div className="shrink-0 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm backdrop-blur-sm">
+          <div className="shrink-0 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs backdrop-blur-sm sm:px-4 sm:py-2.5 sm:text-sm">
             <p>
               <span className="font-medium text-white/80">Ref.</span>{" "}
               <span className="font-semibold tabular-nums text-white">
@@ -666,7 +677,7 @@ export function CotizacionPdfClienteDocument({
               </span>
             </p>
             {fechaExportacion && (
-              <p className="mt-2">
+              <p className="mt-1.5">
                 <span className="font-medium text-white/80">Emitida</span>
                 <br />
                 <time
@@ -681,15 +692,15 @@ export function CotizacionPdfClienteDocument({
         </div>
       </header>
 
-      <div className="relative z-20 -mt-10 px-8 pb-10 print:px-6 print:pb-8">
+      <div className="relative z-20 -mt-7 px-6 pb-8 sm:-mt-8 sm:px-8 sm:pb-10 print:-mt-7 print:px-5 print:pb-7">
         <div
           data-pdf-evitar-corte
-          className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/[0.06] ring-1 ring-slate-200/60 print:shadow-none"
+          className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xl shadow-slate-900/[0.06] ring-1 ring-slate-200/60 sm:p-5 print:p-4 print:shadow-none"
         >
           <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Datos del cliente
           </h2>
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+          <dl className="mt-3 grid gap-2.5 text-sm sm:grid-cols-2 sm:gap-3">
             <div className="sm:col-span-2">
               <dt className="text-slate-500">Cliente</dt>
               <dd className="mt-0.5 font-semibold text-slate-900">
@@ -708,19 +719,19 @@ export function CotizacionPdfClienteDocument({
             </div>
           </dl>
 
-          <div className="mt-6 rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/[0.1] via-white to-slate-50/80 p-4 shadow-sm ring-1 ring-brand/10">
+          <div className="mt-4 rounded-xl border border-brand/20 bg-gradient-to-br from-brand/[0.1] via-white to-slate-50/80 p-3 shadow-sm ring-1 ring-brand/10 sm:mt-5 sm:rounded-2xl sm:p-4">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand">
               Te atiende
             </p>
-            <p className="mt-1.5 text-lg font-semibold tracking-tight text-slate-900">
+            <p className="mt-1 text-base font-semibold tracking-tight text-slate-900 sm:mt-1.5 sm:text-lg">
               {form.nombreVendedor.trim() || "—"}
             </p>
-            <p className="mt-1 text-[11px] leading-snug text-slate-600">
+            <p className="mt-0.5 text-[10px] leading-snug text-slate-600 sm:mt-1 sm:text-[11px]">
               Asesor comercial Punto Pago · Cotización preparada para tu revisión
             </p>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-5">
             <BloqueVigencia fechaExportacion={fechaExportacion} />
           </div>
         </div>
@@ -731,40 +742,42 @@ export function CotizacionPdfClienteDocument({
           resultadoIntegracion &&
           resultadoComision &&
           kioscosMontosPdf && (
-            <div className="mt-5 space-y-4">
+            <div className="mt-3 space-y-3 sm:mt-4 sm:space-y-4">
               <section
                 data-pdf-evitar-corte
                 data-pdf-bloque-setup
                 className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-100"
               >
-                <div className="border-b border-slate-100 p-4 sm:p-5">
+                <div className="border-b border-slate-100 p-3.5 sm:p-4">
                   <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                     Set up e integración
                   </h3>
-                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
+                  <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight text-slate-900 sm:mt-2 sm:text-3xl">
                     {formatUsd(
                       kioscosMontosPdf?.impl.monto ?? resultadoIntegracion.totalUsd,
                     )}
                   </p>
-                  {kioscosMontosPdf?.impl.esPersonalizado && (
+                  {kioscosMontosPdf?.impl.descuentoPct !== null && (
                     <p className="mt-2 text-xs font-medium text-amber-800/90">
-                      Total de implementación / integración según monto acordado con el
-                      asesor para esta cotización.
+                      Incluye descuento comercial de{" "}
+                      {formatPct(kioscosMontosPdf.impl.descuentoPct)} sobre la tarifa
+                      referencial de integración (
+                      {formatUsd(kioscosMontosPdf.impl.baseUsd)}).
                     </p>
                   )}
                   <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
                     Incluye el costo de integración según la modalidad y opciones
                     indicadas en la cotización (referencial).
                   </p>
-                  <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/90 p-3 sm:p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50/90 p-2.5 sm:mt-4 sm:rounded-xl sm:p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:text-[11px]">
                       Acuerdo de pago del set up (referencial)
                     </p>
-                    <p className="mt-2 text-sm font-medium leading-relaxed text-slate-900">
+                    <p className="mt-1.5 text-xs font-medium leading-snug text-slate-900 sm:mt-2 sm:text-sm sm:leading-relaxed">
                       {etiquetaAcuerdoPagoSetup ?? (
                         <span className="font-normal text-slate-500">
                           Indicar en el cotizador la forma de pago del set up (sección
-                          integración).
+                          7).
                         </span>
                       )}
                     </p>
@@ -772,20 +785,26 @@ export function CotizacionPdfClienteDocument({
                 </div>
                 <div
                   id="pdf-bloque-comision"
-                  className="pdf-bloque-comision p-4 sm:p-5"
+                  className="pdf-bloque-comision p-3.5 sm:p-4"
                 >
                   <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                     Comisión de servicio (referencial)
                   </h3>
-                  <p className="mt-1.5 text-xs text-slate-600">
+                  <p className="mt-1 text-[11px] text-slate-600 sm:mt-1.5 sm:text-xs">
                     Estimación con base en el volumen y el ticket indicados en el
                     cotizador.
                   </p>
+                  {notaTarifaKioscosPdf ? (
+                    <p className="mt-1.5 text-[10px] font-medium text-amber-900/90 sm:text-[11px]">
+                      {notaTarifaKioscosPdf}
+                    </p>
+                  ) : null}
                   <TablaComparacionComision
-                    r={resultadoComision}
+                    r={resultadoComisionPdf!}
                     compact
                     comisionMensualResumenUsd={kioscosMontosPdf.com.monto}
-                    comisionResumenEsPersonalizada={kioscosMontosPdf.com.esPersonalizado}
+                    costoTxnResumenUsd={kioscosMontosPdf.costoTxn.monto}
+                    descuentoTarifaPct={kioscosMontosPdf.com.descuentoPct}
                   />
                 </div>
               </section>

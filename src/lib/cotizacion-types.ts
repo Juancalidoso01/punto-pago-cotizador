@@ -47,12 +47,21 @@ export type CotizacionForm = {
   /** Obligatorio para generar PDF / registrar; se muestra en la cotización al cliente */
   nombreVendedor: string;
   /**
-   * Botón en kioscos: monto opcional en USD (texto) que reemplaza al total de integración
-   * calculado en el PDF al cliente.
+   * Botón en kioscos: descuento % opcional sobre set up fee y total de integración
+   * (referencial calculado en el cotizador).
    */
-  kioscosMontoImplementacionPersonalizadoUsd: string;
-  /** Botón en kioscos: comisión mensual estimada mostrada en PDF si se indica monto válido */
-  kioscosComisionMensualPersonalizadaUsd: string;
+  kioscosDescuentoPctImplementacion: string;
+  /**
+   * Botón en kioscos: un solo descuento % sobre costo por transacción y comisión mensual
+   * (tras tarifa acordada si el vendedor la definió).
+   */
+  kioscosDescuentoPctTarifaComision: string;
+  /** Botón en kioscos: sin ajuste | % sobre ticket | USD fijo por operación (vista/PDF) */
+  kioscosTarifaComercialModo: "" | "pct" | "fijo_txn";
+  /** Si modo pct: % sobre cada venta (sustituye % referencial del segmento en el documento) */
+  kioscosTarifaComercialPct: string;
+  /** Si modo fijo_txn: USD por transacción (sustituye tarifa referencial en el documento) */
+  kioscosTarifaComercialFijoTxnUsd: string;
 };
 
 /** Opciones de pago del set up (referencial; se acuerda con comercial) */
@@ -110,7 +119,10 @@ export function createEmptyForm(): CotizacionForm {
     observaciones: "",
     condicionesComerciales: defaultCondiciones,
     nombreVendedor: "",
-    kioscosMontoImplementacionPersonalizadoUsd: "",
-    kioscosComisionMensualPersonalizadaUsd: "",
+    kioscosDescuentoPctImplementacion: "",
+    kioscosDescuentoPctTarifaComision: "",
+    kioscosTarifaComercialModo: "",
+    kioscosTarifaComercialPct: "",
+    kioscosTarifaComercialFijoTxnUsd: "",
   };
 }

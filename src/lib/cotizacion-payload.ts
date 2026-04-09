@@ -13,7 +13,10 @@ import {
 } from "@/lib/integracion";
 import {
   resolverComisionMensualKioscosPdf,
+  resolverCostoTxnKioscosPdf,
   resolverMontoImplementacionKioscosPdf,
+  resolverResultadoComisionEfectivoKioscos,
+  resolverSetupFeeKioscosPdf,
 } from "@/lib/cotizacion-kioscos-montos";
 import { tituloModeloRecomendado } from "@/lib/cotizacion-texto";
 import {
@@ -49,8 +52,13 @@ export function buildCotizacionPayload(
   };
 
   if (form.tipoServicioPuntoPago === "kioscos" && resultadoIntegracion && resultadoComision) {
+    const rEf =
+      resolverResultadoComisionEfectivoKioscos(form, resultadoComision) ??
+      resultadoComision;
     const implPdf = resolverMontoImplementacionKioscosPdf(form, resultadoIntegracion);
     const comPdf = resolverComisionMensualKioscosPdf(form, resultadoComision);
+    const setupPdf = resolverSetupFeeKioscosPdf(form, resultadoIntegracion);
+    const costoTxnPdf = resolverCostoTxnKioscosPdf(form, resultadoComision);
     return {
       ...base,
       modalidad: resultadoIntegracion.resumenModalidad,
@@ -65,24 +73,32 @@ export function buildCotizacionPayload(
       tecnologiaDetalle: form.tecnologiaDetalle,
       recaudoKioscos: false,
       setupFeeUsd: resultadoIntegracion.precioBaseUsd,
+      setupFeeBaseReferencialUsd: setupPdf.baseUsd,
+      setupFeeMostradoPdfUsd: setupPdf.monto,
+      setupFeeDescuentoPct: setupPdf.descuentoPct ?? 0,
       totalIntegracionUsd: resultadoIntegracion.totalUsd,
+      totalIntegracionBaseReferencialUsd: implPdf.baseUsd,
       totalIntegracionMostradoPdfUsd: implPdf.monto,
-      implementacionMontoPersonalizado: implPdf.esPersonalizado,
+      descuentoPctImplementacion: implPdf.descuentoPct ?? 0,
       ventasMensualesUsd: parseMontoUsd(form.ventasMensualesTotalUsd) ?? 0,
       cantidadVentasMes: parseEnteroPositivo(form.cantidadVentasMensuales) ?? 0,
       politicaComisionCashIn: resultadoComision.comisionSoloPorcentaje
         ? "solo_5"
         : "comparar_3_vs_125",
-      modeloComisionRecomendado: tituloModeloRecomendado(resultadoComision),
-      costoTxnRecomendadoUsd: costoTxnRecomendado(resultadoComision),
-      comisionMensualEstUsd: comisionMensualRecomendada(resultadoComision),
+      modeloComisionRecomendado: tituloModeloRecomendado(rEf),
+      tarifaComercialModo: form.kioscosTarifaComercialModo,
+      tarifaComercialPct: form.kioscosTarifaComercialPct,
+      tarifaComercialFijoTxnUsd: form.kioscosTarifaComercialFijoTxnUsd,
+      costoTxnRecomendadoUsd: costoTxnRecomendado(rEf),
+      costoTxnBaseReferencialUsd: costoTxnPdf.baseUsd,
+      costoTxnMostradoPdfUsd: costoTxnPdf.monto,
+      descuentoPctTarifaComision: comPdf.descuentoPct ?? 0,
+      comisionMensualEstUsd: comisionMensualRecomendada(rEf),
+      comisionMensualBaseReferencialUsd: comPdf.baseUsd,
       comisionMensualMostradaPdfUsd: comPdf.monto,
-      comisionMensualPersonalizada: comPdf.esPersonalizado,
       volumenMensualUsd: resultadoComision.volumenMensualUsd,
-      costoTxnRecomendadoFmt: formatUsd(costoTxnRecomendado(resultadoComision)),
-      comisionMensualEstFmt: formatUsd(
-        comisionMensualRecomendada(resultadoComision),
-      ),
+      costoTxnRecomendadoFmt: formatUsd(costoTxnRecomendado(rEf)),
+      comisionMensualEstFmt: formatUsd(comisionMensualRecomendada(rEf)),
       comisionMensualMostradaPdfFmt: formatUsd(comPdf.monto),
       volumenMensualFmt: formatUsd(resultadoComision.volumenMensualUsd),
     };

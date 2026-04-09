@@ -11,8 +11,10 @@ export function AlcanceKioscosTextoBloque({
   compact?: boolean;
   animated?: boolean;
 }) {
-  const textSize = compact ? "text-sm" : "text-sm";
-  const gap = compact ? "space-y-3" : "space-y-4";
+  const textSize = compact ? "text-[13px]" : "text-sm";
+  const gap = compact ? "space-y-2" : "space-y-4";
+  const rowGap = compact ? "gap-2" : "gap-3 sm:gap-4";
+  const leading = compact ? "leading-snug" : "leading-relaxed";
   const itemAnim = animated
     ? "alcance-kioscos-item opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:animate-none animate-alcance-enter"
     : "";
@@ -20,7 +22,7 @@ export function AlcanceKioscosTextoBloque({
   return (
     <div className={`mt-4 ${gap} ${className}`}>
       <div
-        className={`flex gap-3 sm:gap-4 ${itemAnim}`}
+        className={`flex ${rowGap} ${itemAnim}`}
         style={{ animationDelay: animated ? "0ms" : undefined }}
       >
         <div
@@ -28,7 +30,7 @@ export function AlcanceKioscosTextoBloque({
           aria-hidden
         />
         <div
-          className={`min-w-0 flex-1 ${textSize} leading-relaxed text-slate-700 [text-align:justify] [hyphens:auto]`}
+          className={`min-w-0 flex-1 ${textSize} ${leading} text-slate-700 [text-align:justify] [hyphens:auto]`}
           lang="es"
         >
           <span className="font-semibold text-slate-900">
@@ -45,7 +47,7 @@ export function AlcanceKioscosTextoBloque({
       </div>
 
       <div
-        className={`flex gap-3 sm:gap-4 ${itemAnim}`}
+        className={`flex ${rowGap} ${itemAnim}`}
         style={{ animationDelay: animated ? "120ms" : undefined }}
       >
         <div
@@ -53,7 +55,7 @@ export function AlcanceKioscosTextoBloque({
           aria-hidden
         />
         <div
-          className={`min-w-0 flex-1 ${textSize} leading-relaxed text-slate-700 [text-align:justify] [hyphens:auto]`}
+          className={`min-w-0 flex-1 ${textSize} ${leading} text-slate-700 [text-align:justify] [hyphens:auto]`}
           lang="es"
         >
           <span className="font-semibold text-slate-900">

@@ -47,8 +47,14 @@ import {
 } from "@/lib/alcance-servicio-kioscos";
 import { AlcanceKioscosTextoBloque } from "@/components/alcance-kioscos-texto-bloque";
 import {
+  hayTarifaComercialPersonalizadaActiva,
+  parsePorcentajeDescuento,
+  parsePorcentajeTarifa,
   resolverComisionMensualKioscosPdf,
+  resolverCostoTxnKioscosPdf,
   resolverMontoImplementacionKioscosPdf,
+  resolverResultadoComisionEfectivoKioscos,
+  resolverSetupFeeKioscosPdf,
 } from "@/lib/cotizacion-kioscos-montos";
 import { buildCotizacionPayload } from "@/lib/cotizacion-payload";
 import { esCotizacionCompleta } from "@/lib/cotizacion-validacion";
@@ -133,24 +139,42 @@ export function CotizadorApp() {
     [],
   );
 
-  const onBlurFormatearMontoKioscosPdf = useCallback(
+  const onBlurNormalizarPctDescuentoKioscos = useCallback(
     (
       campo:
-        | "kioscosMontoImplementacionPersonalizadoUsd"
-        | "kioscosComisionMensualPersonalizadaUsd",
+        | "kioscosDescuentoPctImplementacion"
+        | "kioscosDescuentoPctTarifaComision",
     ) => {
       setForm((prev) => {
         const raw = prev[campo].trim();
         if (raw === "") return prev;
-        const n = parseMontoUsd(raw);
-        if (n === null) return prev;
-        const formatted = `$ ${formatearMontoUsdParaCampo(n)}`;
-        if (prev[campo] === formatted) return prev;
-        return { ...prev, [campo]: formatted };
+        const p = parsePorcentajeDescuento(raw);
+        if (p === null) return { ...prev, [campo]: "" };
+        const out =
+          p === Math.floor(p)
+            ? String(Math.floor(p))
+            : String(Math.round(p * 10) / 10);
+        if (prev[campo] === out) return prev;
+        return { ...prev, [campo]: out };
       });
     },
     [],
   );
+
+  const onBlurNormalizarPctTarifaKioscos = useCallback(() => {
+    setForm((prev) => {
+      const raw = prev.kioscosTarifaComercialPct.trim();
+      if (raw === "") return prev;
+      const p = parsePorcentajeTarifa(raw);
+      if (p === null) return { ...prev, kioscosTarifaComercialPct: "" };
+      const out =
+        p === Math.floor(p)
+          ? String(Math.floor(p))
+          : String(Math.round(p * 100) / 100);
+      if (prev.kioscosTarifaComercialPct === out) return prev;
+      return { ...prev, kioscosTarifaComercialPct: out };
+    });
+  }, []);
 
   const onChangeCantidadVentas = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -309,6 +333,24 @@ export function CotizadorApp() {
     form.cantidadVentasMensuales,
   ]);
 
+  const resultadoComisionMostrado = useMemo(() => {
+    if (!resultadoComision || form.tipoServicioPuntoPago !== "kioscos") {
+      return resultadoComision;
+    }
+    return (
+      resolverResultadoComisionEfectivoKioscos(form, resultadoComision) ??
+      resultadoComision
+    );
+  }, [form, resultadoComision]);
+
+  /** Comisión efectiva + tarifa manual para UI kioscos (PDF/vista usan la misma base vía resolvers). */
+  const resultadoComisionUiKioscos = useMemo(() => {
+    if (form.tipoServicioPuntoPago !== "kioscos" || !resultadoComision) {
+      return null;
+    }
+    return resultadoComisionMostrado ?? resultadoComision;
+  }, [form.tipoServicioPuntoPago, resultadoComision, resultadoComisionMostrado]);
+
   const kioscosImplementacionPdf = useMemo(() => {
     if (form.tipoServicioPuntoPago !== "kioscos" || !resultadoIntegracion) {
       return null;
@@ -321,6 +363,20 @@ export function CotizadorApp() {
       return null;
     }
     return resolverComisionMensualKioscosPdf(form, resultadoComision);
+  }, [form, resultadoComision]);
+
+  const kioscosSetupFeePdf = useMemo(() => {
+    if (form.tipoServicioPuntoPago !== "kioscos" || !resultadoIntegracion) {
+      return null;
+    }
+    return resolverSetupFeeKioscosPdf(form, resultadoIntegracion);
+  }, [form, resultadoIntegracion]);
+
+  const kioscosCostoTxnPdf = useMemo(() => {
+    if (form.tipoServicioPuntoPago !== "kioscos" || !resultadoComision) {
+      return null;
+    }
+    return resolverCostoTxnKioscosPdf(form, resultadoComision);
   }, [form, resultadoComision]);
 
   const cashOutCargoMensualEstimado = useMemo(() => {
@@ -831,35 +887,56 @@ export function CotizadorApp() {
                       Modelo recomendado
                     </p>
                     <p className="mt-1 text-base font-semibold text-slate-900">
-                      {tituloModeloRecomendado(resultadoComision)}
+                      {tituloModeloRecomendado(resultadoComisionUiKioscos!)}
                     </p>
                     <dl className="mt-3 grid gap-2 sm:grid-cols-2">
                       <div>
-                        <dt className="text-xs text-slate-500">Costo por transacción</dt>
+                        <dt className="text-xs text-slate-500">
+                          Costo por transacción
+                          {kioscosCostoTxnPdf != null &&
+                          kioscosCostoTxnPdf.descuentoPct !== null ? (
+                            <span className="ml-1 font-normal text-brand">
+                              (desc. {formatPct(kioscosCostoTxnPdf.descuentoPct)})
+                            </span>
+                          ) : null}
+                        </dt>
                         <dd className="font-semibold text-slate-900">
-                          {formatUsd(costoTxnRecomendado(resultadoComision))}
+                          {formatUsd(
+                            kioscosCostoTxnPdf?.monto ??
+                              costoTxnRecomendado(resultadoComisionUiKioscos!),
+                          )}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-xs text-slate-500">
-                          Comisión mensual estimada
-                          {kioscosComisionPdf?.esPersonalizado ? (
+                          Comisión mensual estimada (USD)
+                          {kioscosComisionPdf != null &&
+                          kioscosComisionPdf.descuentoPct !== null ? (
                             <span className="ml-1 font-normal text-brand">
-                              (PDF personalizado)
+                              (desc. {formatPct(kioscosComisionPdf.descuentoPct)})
                             </span>
                           ) : null}
                         </dt>
                         <dd className="font-semibold text-slate-900">
                           {formatUsd(
                             kioscosComisionPdf?.monto ??
-                              comisionMensualRecomendada(resultadoComision),
+                              comisionMensualRecomendada(
+                                resultadoComisionUiKioscos!,
+                              ),
                           )}
                         </dd>
                       </div>
                     </dl>
                   </div>
                   <p className="rounded-lg bg-slate-100/90 p-3 text-slate-700">
-                    {textoExplicativoComision(resultadoComision)}
+                    {hayTarifaComercialPersonalizadaActiva(form) ? (
+                      <>
+                        Los importes anteriores usan la{" "}
+                        <strong>tarifa indicada en la sección 6</strong> (sustituye la
+                        referencia automática del segmento).{" "}
+                      </>
+                    ) : null}
+                    {textoExplicativoComision(resultadoComisionUiKioscos!)}
                   </p>
                   <p className="text-xs text-slate-500">
                     Volumen mensual estimado (monto total de ventas):{" "}
@@ -874,7 +951,184 @@ export function CotizadorApp() {
 
           <div className="border-t border-slate-100 pt-6">
             <h3 className="text-base font-semibold text-slate-900">
-              6. Integración e implementación (USD)
+              6. Tarifa comercial y descuentos (opcional)
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Por defecto el cotizador usa la política del segmento y el ticket/volumen de
+              la sección 4. Puedes <strong>sustituir la tarifa</strong> que verá el cliente
+              (% sobre venta o USD por operación) y, aparte, aplicar{" "}
+              <strong>descuentos %</strong> sobre implementación y sobre la comisión/costo
+              por txn ya calculados con esa tarifa. Vacío = sin ajuste.
+            </p>
+            <div className="mt-4 rounded-2xl border-2 border-brand/45 bg-gradient-to-br from-brand/[0.08] via-white to-slate-50/90 p-4 shadow-sm ring-1 ring-brand/20 sm:p-5">
+              <p className="text-sm font-semibold text-slate-900">
+                Tarifa mostrada al cliente (sustituye la referencia automática)
+              </p>
+              <p className="mt-1 text-xs text-slate-600">
+                Si eliges % o monto fijo, el PDF y la sección 5 usan esa base antes de
+                aplicar el descuento % de comisión (si lo completas abajo).
+              </p>
+              <div className="mt-3 space-y-2">
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                  <input
+                    type="radio"
+                    name="kioscosTarifaComercialModo"
+                    className="h-4 w-4 border-slate-300 text-brand focus:ring-brand"
+                    checked={form.kioscosTarifaComercialModo === ""}
+                    onChange={() => setField("kioscosTarifaComercialModo", "")}
+                  />
+                  Usar referencia del cotizador (segmento + sección 4)
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                  <input
+                    type="radio"
+                    name="kioscosTarifaComercialModo"
+                    className="h-4 w-4 border-slate-300 text-brand focus:ring-brand"
+                    checked={form.kioscosTarifaComercialModo === "pct"}
+                    onChange={() => setField("kioscosTarifaComercialModo", "pct")}
+                  />
+                  Porcentaje sobre cada venta
+                </label>
+                {form.kioscosTarifaComercialModo === "pct" ? (
+                  <label className="ml-6 block">
+                    <span className="mb-1 block text-xs font-medium text-slate-600">
+                      % sobre ticket (ej. 3 o 4,25)
+                    </span>
+                    <input
+                      className={`${inputClass} max-w-[12rem] text-right tabular-nums`}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={form.kioscosTarifaComercialPct}
+                      onChange={(e) =>
+                        setField(
+                          "kioscosTarifaComercialPct",
+                          e.target.value.replace(/[^\d.,]/g, ""),
+                        )
+                      }
+                      onBlur={onBlurNormalizarPctTarifaKioscos}
+                      placeholder="Ej. 2,75"
+                    />
+                  </label>
+                ) : null}
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                  <input
+                    type="radio"
+                    name="kioscosTarifaComercialModo"
+                    className="h-4 w-4 border-slate-300 text-brand focus:ring-brand"
+                    checked={form.kioscosTarifaComercialModo === "fijo_txn"}
+                    onChange={() => setField("kioscosTarifaComercialModo", "fijo_txn")}
+                  />
+                  Monto fijo USD por transacción
+                </label>
+                {form.kioscosTarifaComercialModo === "fijo_txn" ? (
+                  <label className="ml-6 block">
+                    <span className="mb-1 block text-xs font-medium text-slate-600">
+                      USD por operación
+                    </span>
+                    <input
+                      className={`${inputClass} max-w-[14rem] text-right tabular-nums`}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={form.kioscosTarifaComercialFijoTxnUsd}
+                      onChange={(e) =>
+                        setField(
+                          "kioscosTarifaComercialFijoTxnUsd",
+                          formatearMontoUsdEnVivo(e.target.value),
+                        )
+                      }
+                      onBlur={() =>
+                        setForm((prev) => {
+                          const raw = prev.kioscosTarifaComercialFijoTxnUsd.trim();
+                          if (raw === "") return prev;
+                          const n = parseMontoUsd(raw);
+                          if (n === null) return prev;
+                          const formatted = `$ ${formatearMontoUsdParaCampo(n)}`;
+                          if (prev.kioscosTarifaComercialFijoTxnUsd === formatted)
+                            return prev;
+                          return {
+                            ...prev,
+                            kioscosTarifaComercialFijoTxnUsd: formatted,
+                          };
+                        })
+                      }
+                      placeholder="Ej. $ 1,25"
+                    />
+                  </label>
+                ) : null}
+              </div>
+
+              <p className="mt-6 text-sm font-semibold text-slate-900">
+                Descuentos comerciales (%)
+              </p>
+              <p className="mt-1 text-xs text-slate-600">
+                Un mismo % aplica al set up fee y al total de implementación. Otro % único
+                aplica por igual al costo por transacción y a la comisión mensual estimada
+                (tras la tarifa de arriba).
+              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="block sm:col-span-2">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">
+                    Descuento % sobre set up e integración (total referencial)
+                  </span>
+                  <input
+                    className={`${inputClass} text-right tabular-nums`}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={form.kioscosDescuentoPctImplementacion}
+                    onChange={(e) =>
+                      setField(
+                        "kioscosDescuentoPctImplementacion",
+                        e.target.value.replace(/[^\d.,]/g, ""),
+                      )
+                    }
+                    onBlur={() =>
+                      onBlurNormalizarPctDescuentoKioscos(
+                        "kioscosDescuentoPctImplementacion",
+                      )
+                    }
+                    placeholder="Ej. 10 (= 10 % menos sobre tarifa calculada)"
+                  />
+                  {resultadoIntegracion ? (
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Referencia total: {formatUsd(resultadoIntegracion.totalUsd)}
+                      {kioscosImplementacionPdf != null &&
+                      kioscosImplementacionPdf.descuentoPct !== null
+                        ? ` → con descuento: ${formatUsd(kioscosImplementacionPdf.monto)}`
+                        : null}
+                    </span>
+                  ) : null}
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">
+                    Descuento % sobre comisión mensual y costo por transacción (mismo % en
+                    ambos)
+                  </span>
+                  <input
+                    className={`${inputClass} text-right tabular-nums`}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={form.kioscosDescuentoPctTarifaComision}
+                    onChange={(e) =>
+                      setField(
+                        "kioscosDescuentoPctTarifaComision",
+                        e.target.value.replace(/[^\d.,]/g, ""),
+                      )
+                    }
+                    onBlur={() =>
+                      onBlurNormalizarPctDescuentoKioscos(
+                        "kioscosDescuentoPctTarifaComision",
+                      )
+                    }
+                    placeholder="Ej. 15"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 pt-6">
+            <h3 className="text-base font-semibold text-slate-900">
+              7. Integración e implementación (USD)
             </h3>
             <p className="mt-1 text-sm text-slate-500">
               Solo hay dos modalidades: <strong>Web services</strong> (conexión en
@@ -1114,17 +1368,29 @@ export function CotizadorApp() {
                     {resultadoIntegracion.resumenModalidad}
                   </p>
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-600">Set up fee</dt>
+                    <dt className="text-slate-600">
+                      Set up fee
+                      {kioscosSetupFeePdf != null &&
+                      kioscosSetupFeePdf.descuentoPct !== null ? (
+                        <span className="mt-0.5 block text-xs font-normal text-brand">
+                          Desc. {formatPct(kioscosSetupFeePdf.descuentoPct)} s/ referencia
+                        </span>
+                      ) : null}
+                    </dt>
                     <dd className="font-semibold text-slate-900">
-                      {formatUsd(resultadoIntegracion.precioBaseUsd)}
+                      {formatUsd(
+                        kioscosSetupFeePdf?.monto ??
+                          resultadoIntegracion.precioBaseUsd,
+                      )}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4 border-t border-slate-200 pt-2">
                     <dt className="font-medium text-slate-800">
                       Total estimado integración
-                      {kioscosImplementacionPdf?.esPersonalizado ? (
+                      {kioscosImplementacionPdf != null &&
+                      kioscosImplementacionPdf.descuentoPct !== null ? (
                         <span className="mt-0.5 block text-xs font-normal text-brand">
-                          Monto personalizado para PDF
+                          Desc. {formatPct(kioscosImplementacionPdf.descuentoPct)} s/ referencia
                         </span>
                       ) : null}
                     </dt>
@@ -1138,76 +1404,6 @@ export function CotizadorApp() {
                 </dl>
               )}
             </div>
-
-            {form.tipoServicioPuntoPago === "kioscos" && (
-              <div className="mt-4 space-y-4 rounded-2xl border border-dashed border-brand/35 bg-white/90 p-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    Montos en PDF (opcional)
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Deja vacío para usar los valores calculados. Si ingresas un monto
-                    válido, el resumen al cliente y el PDF mostrarán ese importe.
-                  </p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-slate-700">
-                      Total integración / implementación (USD)
-                    </span>
-                    <input
-                      className={`${inputClass} text-right tabular-nums`}
-                      inputMode="decimal"
-                      autoComplete="off"
-                      value={form.kioscosMontoImplementacionPersonalizadoUsd}
-                      onChange={(e) =>
-                        setField(
-                          "kioscosMontoImplementacionPersonalizadoUsd",
-                          formatearMontoUsdEnVivo(e.target.value),
-                        )
-                      }
-                      onBlur={() =>
-                        onBlurFormatearMontoKioscosPdf(
-                          "kioscosMontoImplementacionPersonalizadoUsd",
-                        )
-                      }
-                      placeholder={
-                        resultadoIntegracion
-                          ? `Calculado: ${formatUsd(resultadoIntegracion.totalUsd)}`
-                          : "Ej. $ 12,500"
-                      }
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-slate-700">
-                      Comisión mensual estimada (USD)
-                    </span>
-                    <input
-                      className={`${inputClass} text-right tabular-nums`}
-                      inputMode="decimal"
-                      autoComplete="off"
-                      value={form.kioscosComisionMensualPersonalizadaUsd}
-                      onChange={(e) =>
-                        setField(
-                          "kioscosComisionMensualPersonalizadaUsd",
-                          formatearMontoUsdEnVivo(e.target.value),
-                        )
-                      }
-                      onBlur={() =>
-                        onBlurFormatearMontoKioscosPdf(
-                          "kioscosComisionMensualPersonalizadaUsd",
-                        )
-                      }
-                      placeholder={
-                        resultadoComision
-                          ? `Calculado: ${formatUsd(comisionMensualRecomendada(resultadoComision))}`
-                          : "Ej. $ 850"
-                      }
-                    />
-                  </label>
-                </div>
-              </div>
-            )}
           </div>
             </>
           )}
@@ -1452,17 +1648,27 @@ export function CotizadorApp() {
                       <tr className="border-b border-slate-100">
                         <td className="px-3 py-2 text-slate-700">
                           Set up fee
+                          {kioscosSetupFeePdf != null &&
+                          kioscosSetupFeePdf.descuentoPct !== null ? (
+                            <span className="mt-0.5 block text-xs font-normal text-brand">
+                              Desc. {formatPct(kioscosSetupFeePdf.descuentoPct)} s/ ref.
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-3 py-2 text-right font-medium text-slate-900">
-                          {formatUsd(resultadoIntegracion.precioBaseUsd)}
+                          {formatUsd(
+                            kioscosSetupFeePdf?.monto ??
+                              resultadoIntegracion.precioBaseUsd,
+                          )}
                         </td>
                       </tr>
                       <tr className="bg-slate-50">
                         <td className="px-3 py-2 font-semibold text-slate-900">
                           Total integración (est.)
-                          {kioscosImplementacionPdf?.esPersonalizado ? (
+                          {kioscosImplementacionPdf != null &&
+                          kioscosImplementacionPdf.descuentoPct !== null ? (
                             <span className="mt-0.5 block text-xs font-normal text-brand">
-                              Monto acordado con comercial
+                              Desc. {formatPct(kioscosImplementacionPdf.descuentoPct)} s/ ref.
                             </span>
                           ) : null}
                         </td>
@@ -1479,13 +1685,18 @@ export function CotizadorApp() {
               </section>
             )}
 
-            {resultadoComision && (
+            {resultadoComision && resultadoComisionUiKioscos && (
               <section className="mt-8">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Comisión recomendada (referencial)
                 </h3>
                 <p className="mt-2 text-xs text-slate-500">
-                  {resultadoComision.comisionSoloPorcentaje ? (
+                  {hayTarifaComercialPersonalizadaActiva(form) ? (
+                    <>
+                      Incluye la <strong>tarifa indicada en el cotizador</strong> (sección
+                      6). Punto Pago factura al comercio según lo acordado.
+                    </>
+                  ) : resultadoComision.comisionSoloPorcentaje ? (
                     <>
                       Política referencial de {formatPct(resultadoComision.pct)} sobre
                       cada venta para este segmento (sin comparar con el modelo fijo
@@ -1505,32 +1716,47 @@ export function CotizadorApp() {
                   <div>
                     <dt className="text-slate-500">Modelo recomendado</dt>
                     <dd className="font-semibold text-slate-900">
-                      {tituloModeloRecomendado(resultadoComision)}
+                      {tituloModeloRecomendado(resultadoComisionUiKioscos)}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-slate-500">Costo por transacción</dt>
                     <dd className="font-medium text-slate-900">
-                      {formatUsd(costoTxnRecomendado(resultadoComision))}
+                      {formatUsd(
+                        kioscosCostoTxnPdf?.monto ??
+                          costoTxnRecomendado(resultadoComisionUiKioscos),
+                      )}
+                      {kioscosCostoTxnPdf != null &&
+                      kioscosCostoTxnPdf.descuentoPct !== null ? (
+                        <span className="mt-1 block text-xs font-normal text-brand">
+                          Con descuento {formatPct(kioscosCostoTxnPdf.descuentoPct)} s/ tarifa ref.
+                        </span>
+                      ) : null}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Comisión mensual estimada</dt>
+                    <dt className="text-slate-500">Comisión mensual estimada (USD)</dt>
                     <dd className="font-medium text-slate-900">
                       {formatUsd(
                         kioscosComisionPdf?.monto ??
-                          comisionMensualRecomendada(resultadoComision),
+                          comisionMensualRecomendada(resultadoComisionUiKioscos),
                       )}
-                      {kioscosComisionPdf?.esPersonalizado ? (
+                      {kioscosComisionPdf != null &&
+                      kioscosComisionPdf.descuentoPct !== null ? (
                         <span className="mt-1 block text-xs font-normal text-brand">
-                          Monto mostrado según acuerdo comercial
+                          Con descuento {formatPct(kioscosComisionPdf.descuentoPct)} s/ estimación ref.
                         </span>
                       ) : null}
                     </dd>
                   </div>
                 </dl>
                 <p className="mt-3 text-sm text-slate-700">
-                  {textoExplicativoComision(resultadoComision)}
+                  {hayTarifaComercialPersonalizadaActiva(form) ? (
+                    <>
+                      Los importes reflejan la tarifa definida en la sección 6.{" "}
+                    </>
+                  ) : null}
+                  {textoExplicativoComision(resultadoComisionUiKioscos)}
                 </p>
               </section>
             )}
@@ -1588,26 +1814,63 @@ export function CotizadorApp() {
             const notasIntegracion = form.tecnologiaDetalle.trim()
               ? `\n- Notas integración: ${form.tecnologiaDetalle.trim()}`
               : "";
+            const setupFeePlano =
+              resultadoIntegracion
+                ? `${formatUsd(
+                    kioscosSetupFeePdf?.monto ??
+                      resultadoIntegracion.precioBaseUsd,
+                  )}${
+                    kioscosSetupFeePdf != null &&
+                    kioscosSetupFeePdf.descuentoPct !== null
+                      ? ` (desc. ${formatPct(kioscosSetupFeePdf.descuentoPct)} s/ ref.)`
+                      : ""
+                  }`
+                : "—";
             const totalIntegracionPlano =
               resultadoIntegracion
                 ? `${formatUsd(
                     kioscosImplementacionPdf?.monto ??
                       resultadoIntegracion.totalUsd,
-                  )}${kioscosImplementacionPdf?.esPersonalizado ? " (PDF personalizado)" : ""}`
+                  )}${
+                    kioscosImplementacionPdf != null &&
+                    kioscosImplementacionPdf.descuentoPct !== null
+                      ? ` (desc. ${formatPct(kioscosImplementacionPdf.descuentoPct)} s/ ref.)`
+                      : ""
+                  }`
                 : "—";
+            const rM = resultadoComisionUiKioscos;
             const comisionMensualPlano =
-              resultadoComision
+              resultadoComision && rM
                 ? `${formatUsd(
                     kioscosComisionPdf?.monto ??
-                      comisionMensualRecomendada(resultadoComision),
-                  )}${kioscosComisionPdf?.esPersonalizado ? " (PDF personalizado)" : ""}`
+                      comisionMensualRecomendada(rM),
+                  )}${
+                    kioscosComisionPdf != null &&
+                    kioscosComisionPdf.descuentoPct !== null
+                      ? ` (desc. ${formatPct(kioscosComisionPdf.descuentoPct)} s/ ref.)`
+                      : ""
+                  }`
                 : "";
-            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nVendedor: ${form.nombreVendedor.trim() || "—"}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Total integración est.: ${totalIntegracionPlano}`;
-            const bloqueComision = resultadoComision
-              ? resultadoComision.comisionSoloPorcentaje
-                ? `\n\nComisión (referencial — política 5% segmento):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${comisionMensualPlano}\n- ${textoExplicativoComision(resultadoComision)}`
-                : `\n\nComisión recomendada (referencial; ${DEFAULT_COMISION_PORCENTAJE}% vs ${DEFAULT_COMISION_FIJA_USD} USD por txn):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(resultadoComision)}`
-              : "\n\nComisión: complete monto y cantidad de ventas (sección 4).\n";
+            const costoTxnPlano =
+              resultadoComision && rM
+                ? `${formatUsd(
+                    kioscosCostoTxnPdf?.monto ?? costoTxnRecomendado(rM),
+                  )}${
+                    kioscosCostoTxnPdf != null &&
+                    kioscosCostoTxnPdf.descuentoPct !== null
+                      ? ` (desc. ${formatPct(kioscosCostoTxnPdf.descuentoPct)} s/ ref.)`
+                      : ""
+                  }`
+                : "";
+            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nVendedor: ${form.nombreVendedor.trim() || "—"}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Set up fee est.: ${setupFeePlano}\n- Total integración est.: ${totalIntegracionPlano}`;
+            const bloqueComision =
+              resultadoComision && rM
+                ? hayTarifaComercialPersonalizadaActiva(form)
+                  ? `\n\nComisión (referencial — tarifa indicada en cotizador, sección 6):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
+                  : rM.comisionSoloPorcentaje
+                    ? `\n\nComisión (referencial — política porcentaje del segmento):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- ${textoExplicativoComision(rM)}`
+                    : `\n\nComisión recomendada (referencial; ${formatPct(rM.pct)} vs ${formatUsd(rM.fijoUsd)} por txn):\n- Modelo: ${tituloModeloRecomendado(rM)}\n- Costo por transacción: ${costoTxnPlano}\n- Comisión mensual estimada (USD): ${comisionMensualPlano}\n- Facturación: Punto Pago factura al comercio el total del período según el modelo acordado.\n- ${textoExplicativoComision(rM)}`
+                : "\n\nComisión: complete monto y cantidad de ventas (sección 4).\n";
             const cola = `\n${form.observaciones ? `Notas:\n${form.observaciones}\n\n` : ""}Condiciones:\n${form.condicionesComerciales}\n\n${form.nombreVendedor ? form.nombreVendedor + " · " : ""}Equipo comercial Punto Pago`;
             return cabeza + bloqueComision + cola;
           })()}
