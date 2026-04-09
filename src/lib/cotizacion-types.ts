@@ -44,6 +44,7 @@ export type CotizacionForm = {
   productoInteres: string;
   observaciones: string;
   condicionesComerciales: string;
+  /** Obligatorio para generar PDF / registrar; se muestra en la cotización al cliente */
   nombreVendedor: string;
 };
 

@@ -699,6 +699,18 @@ export function CotizacionPdfClienteDocument({
             </div>
           </dl>
 
+          <div className="mt-6 rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/[0.1] via-white to-slate-50/80 p-4 shadow-sm ring-1 ring-brand/10">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand">
+              Te atiende
+            </p>
+            <p className="mt-1.5 text-lg font-semibold tracking-tight text-slate-900">
+              {form.nombreVendedor.trim() || "—"}
+            </p>
+            <p className="mt-1 text-[11px] leading-snug text-slate-600">
+              Asesor comercial Punto Pago · Cotización preparada para tu revisión
+            </p>
+          </div>
+
           <div className="mt-6">
             <BloqueVigencia fechaExportacion={fechaExportacion} />
           </div>

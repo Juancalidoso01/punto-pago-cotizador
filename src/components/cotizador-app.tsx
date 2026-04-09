@@ -434,8 +434,8 @@ export function CotizadorApp() {
             )}
             {!cotizacionCompleta && validoMinimo && (
               <p className="mt-3 text-sm text-amber-200">
-                Selecciona tipo de servicio y completa los campos requeridos (según el
-                tipo) para habilitar PDF y Sheets.
+                Indica el <strong>nombre del vendedor</strong>, selecciona tipo de servicio
+                y completa los campos requeridos (según el tipo) para habilitar PDF y Sheets.
               </p>
             )}
           </div>
@@ -571,6 +571,24 @@ export function CotizadorApp() {
                   placeholder="Ej. María González"
                   autoComplete="name"
                 />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  Nombre del vendedor <span className="text-red-600">*</span>
+                </span>
+                <input
+                  className={inputClass}
+                  value={form.nombreVendedor}
+                  onChange={(e) => setField("nombreVendedor", e.target.value)}
+                  placeholder="Tu nombre y apellido como aparecerá en la cotización"
+                  autoComplete="name"
+                  aria-required
+                />
+                <span className="mt-1 block text-xs text-slate-500">
+                  Se muestra en el PDF para el cliente. Obligatorio para procesar la
+                  cotización.
+                </span>
               </label>
             </div>
           </div>
@@ -1441,7 +1459,7 @@ export function CotizadorApp() {
             const notasIntegracion = form.tecnologiaDetalle.trim()
               ? `\n- Notas integración: ${form.tecnologiaDetalle.trim()}`
               : "";
-            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
+            const cabeza = `COTIZACIÓN PUNTO PAGO — Ref. ${ref ?? "—"}\nFecha: ${formatFechaHoy()}\nMoneda: USD\n\nCliente: ${form.empresa}\nContacto: ${form.contactoNombre}\nCorreo: ${form.email}\nVendedor: ${form.nombreVendedor.trim() || "—"}\nIndustria / segmento: ${industriaLabel || "—"}\n${lineaVigencia}${bloqueAlcance}\n\nTransaccionalidad (USD):\n- Monto total mensual de ventas: ${ventasMensualesParseado !== null ? formatUsd(ventasMensualesParseado) : form.ventasMensualesTotalUsd.trim() || "—"}\n- Cantidad de ventas al mes: ${form.cantidadVentasMensuales.trim() || "—"}\n- Ticket promedio (calculado): ${ticketPromedioDerivado !== null ? formatUsd(ticketPromedioDerivado) : "—"}\n- Volumen mensual estimado: ${resultadoComision ? formatUsd(resultadoComision.volumenMensualUsd) : "—"}\n- Interés: ${form.productoInteres || "—"}\n\nIntegración (referencial):\n- Industria: ${industriaLabel || "—"}\n- Modalidad: ${resultadoIntegracion ? resultadoIntegracion.resumenModalidad : "—"}\n- Resumen técnico: ${textoResumenIntegracionKioscos || "—"}\n- Forma de pago del set up: ${etiquetaMetodoPagoIntegracion || "—"}${notasIntegracion}\n- Total integración est.: ${resultadoIntegracion ? formatUsd(resultadoIntegracion.totalUsd) : "—"}`;
             const bloqueComision = resultadoComision
               ? resultadoComision.comisionSoloPorcentaje
                 ? `\n\nComisión (referencial — política 5% segmento):\n- Modelo: ${tituloModeloRecomendado(resultadoComision)}\n- Costo por transacción: ${formatUsd(costoTxnRecomendado(resultadoComision))}\n- Comisión mensual estimada: ${formatUsd(comisionMensualRecomendada(resultadoComision))}\n- ${textoExplicativoComision(resultadoComision)}`

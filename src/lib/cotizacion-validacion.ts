@@ -56,6 +56,7 @@ export function esCotizacionCompleta(
   resultadoComision: ResultadoComision | null,
 ): boolean {
   if (!form.empresa.trim() || !esEmailFormatoValido(form.email)) return false;
+  if (!form.nombreVendedor.trim()) return false;
   if (!form.tipoServicioPuntoPago) return false;
   if (!form.industriaId.trim()) return false;
 
